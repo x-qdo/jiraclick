@@ -1,0 +1,14 @@
+debug: true
+rabbitmq:
+  host: 127.0.0.1
+  port: 5672
+  user: user
+  password: pass
+  vhost: /
+http:
+  port: 8080
+metrics:
+  port: 9090
+clickup:
+  token: ""
+  list_id: "1234"
