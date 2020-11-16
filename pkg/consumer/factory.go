@@ -3,19 +3,24 @@ package consumer
 import (
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/contract"
+	"x-qdo/jiraclick/pkg/provider"
+	"x-qdo/jiraclick/pkg/publisher"
 )
 
-type ActionFactory struct {
-}
-
-func (f *ActionFactory) Make(key contract.RoutingKey, cfg *config.Config) (contract.Action, error) {
+func MakeAction(key contract.RoutingKey, cfg *config.Config, clickup *provider.ClickUpAPIClient, queueProvider *provider.RabbitChannel) (contract.Action, error) {
 	var (
 		action contract.Action
 		err    error
 	)
+
+	p, err := publisher.NewEventPublisher(queueProvider)
+	if err != nil {
+		return nil, err
+	}
+
 	switch key {
-	case contract.TaskCreate:
-		action, err = NewTaskCreateClickupAction(cfg)
+	case contract.TaskCreateClickUp:
+		action, err = NewTaskCreateClickupAction(cfg, clickup, p)
 	}
 
 	if err != nil {

@@ -19,10 +19,7 @@ type Context struct {
 }
 
 func NewContext(configPath string) (*Context, error) {
-	var (
-		ctx       Context
-		waitGroup *sync.WaitGroup
-	)
+	var ctx Context
 	ctx.Ctx, ctx.CancelF = context.WithCancel(context.Background())
 
 	cfg, err := config.NewConfig(configPath)
@@ -35,12 +32,19 @@ func NewContext(configPath string) (*Context, error) {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	amqpProvider, err := provider.NewRabbitChannel(ctx.Ctx, waitGroup, cfg, logger)
+	ctx.WaitGroup = new(sync.WaitGroup)
+
+	amqpProvider, err := provider.NewRabbitChannel(ctx.Ctx, ctx.WaitGroup, cfg, logger)
 	if err != nil {
 		panic(err)
 	}
 
-	setCommands(&ctx, cfg, amqpProvider)
+	clickupProvider, err := provider.NewClickUpClient(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	setCommands(&ctx, cfg, amqpProvider, clickupProvider)
 
 	return &ctx, nil
 }
@@ -49,8 +53,9 @@ func setCommands(
 	ctx *Context,
 	cfg *config.Config,
 	queue *provider.RabbitChannel,
+	clickup *provider.ClickUpAPIClient,
 ) {
-	workerCmd := cmd.NewWorkerCmd(cfg, queue)
+	workerCmd := cmd.NewWorkerCmd(cfg, queue, clickup)
 	httpHandlerCmd := cmd.NewHttpHandlerCmd(cfg)
 
 	rootCmd := cmd.NewRootCmd()

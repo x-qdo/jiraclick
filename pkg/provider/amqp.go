@@ -17,7 +17,6 @@ type RabbitChannel struct {
 	waitGroup       *sync.WaitGroup
 	conn            *amqp.Connection
 	channel         *amqp.Channel
-	exchangeName    string
 	url             string
 	errorConnection chan *amqp.Error
 	notifyConfirm   chan amqp.Confirmation
@@ -29,7 +28,6 @@ type RabbitChannel struct {
 type messageListener func(delivery amqp.Delivery) error
 
 type consumer struct {
-	name         string
 	routingKey   string
 	exchangeName string
 	callback     messageListener
@@ -50,6 +48,7 @@ func NewRabbitChannel(ctx context.Context, wg *sync.WaitGroup, cfg *config.Confi
 	}
 
 	ch.url = url
+	ch.logger = logger
 
 	err := ch.connect()
 	if err != nil {
@@ -140,14 +139,14 @@ func (ch *RabbitChannel) Publish(message interface{}, exchangeName, routingKey s
 	}
 }
 
-func (ch *RabbitChannel) SetUpConsumer(exchangeName, name, routingKey string, callback messageListener) error {
+func (ch *RabbitChannel) SetUpConsumer(exchangeName, routingKey string, callback messageListener) error {
 	q, err := ch.channel.QueueDeclare(
-		name,  // name
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
+		routingKey, // name
+		true,       // durable
+		false,      // delete when unused
+		false,      // exclusive
+		false,      // no-wait
+		nil,        // arguments
 	)
 	if err != nil {
 		err = fmt.Errorf("RabbitMQ: failed to declare a queue: %w", err)
@@ -170,7 +169,7 @@ func (ch *RabbitChannel) SetUpConsumer(exchangeName, name, routingKey string, ca
 
 	msgChannel, err := ch.channel.Consume(
 		q.Name, // queue
-		name,   // consumer
+		"",     // consumer
 		false,  // auto ack
 		false,  // exclusive
 		false,  // no local
@@ -183,8 +182,7 @@ func (ch *RabbitChannel) SetUpConsumer(exchangeName, name, routingKey string, ca
 		return err
 	}
 
-	ch.consumers[name] = consumer{
-		name:         name,
+	ch.consumers[routingKey] = consumer{
 		routingKey:   routingKey,
 		exchangeName: exchangeName,
 		callback:     callback,
@@ -262,7 +260,7 @@ func (ch *RabbitChannel) reconnect() {
 
 func (ch *RabbitChannel) recoverConsumers() {
 	for _, consumer := range ch.consumers {
-		err := ch.SetUpConsumer(consumer.exchangeName, consumer.name, consumer.routingKey, consumer.callback)
+		err := ch.SetUpConsumer(consumer.exchangeName, consumer.routingKey, consumer.callback)
 		if err != nil {
 			ch.logger.Error(err.Error())
 		}
@@ -288,13 +286,15 @@ func (ch *RabbitChannel) listenQueue(routingKey string, msgChannel <-chan amqp.D
 				return
 			}
 			if err := callback(delivery); err != nil {
+				ch.logger.Error(err)
 				if err := delivery.Nack(false, false); err != nil {
 					ch.logger.Error(fmt.Errorf("RabbitMQ: %s: message nacking failed: %w. Consumer is turned off", routingKey, err))
 					return
 				}
-			}
-			if err := delivery.Ack(false); err != nil {
-				ch.logger.Error(fmt.Errorf("%s: acknowledger failed with an error: %w", routingKey, err))
+			} else {
+				if err := delivery.Ack(false); err != nil {
+					ch.logger.Error(fmt.Errorf("%s: acknowledger failed with an error: %w", routingKey, err))
+				}
 			}
 
 			if done && len(msgChannel) == 0 {

@@ -4,11 +4,12 @@ rabbitmq:
   port: 5672
   user: user
   password: pass
-  vhost: /
+  vhost:
 http:
   port: 8080
 metrics:
   port: 9090
 clickup:
-  token: ""
-  list_id: "1234"
+  host: "https://api.clickup.com/api/v2"
+  token: "pk_"
+  list_id: "123"

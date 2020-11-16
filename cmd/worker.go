@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"github.com/spf13/cobra"
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/consumer"
@@ -12,17 +11,12 @@ import (
 func NewWorkerCmd(
 	cfg *config.Config,
 	queue *provider.RabbitChannel,
+	clickup *provider.ClickUpAPIClient,
 ) *cobra.Command {
 	return &cobra.Command{
-		Use:   "worker [OBJECT]",
+		Use:   "worker",
 		Short: "Runs tasks consumer",
 		Long:  `Runs consumer to receive and process tasks from queue.`,
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 1 {
-				return errors.New("requires an object argument")
-			}
-			return nil
-		},
 		Run: func(cmd *cobra.Command, args []string) {
 			var (
 				cons contract.Consumer
@@ -30,7 +24,7 @@ func NewWorkerCmd(
 			)
 
 			go func() {
-				cons, err = consumer.NewActionsConsumer(cfg, queue)
+				cons, err = consumer.NewActionsConsumer(cfg, queue, clickup)
 				if err != nil {
 					panic(err)
 				}

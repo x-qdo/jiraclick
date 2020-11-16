@@ -9,9 +9,10 @@ import (
 type Config struct {
 	Debug   bool `yaml:"debug"`
 	ClickUp struct {
-		Token  string `yaml:"token"`
-		ListID string `yaml:"list_id"`
-	}
+		Host  string `yaml:"host"`
+		Token string `yaml:"token"`
+		List  string `yaml:"list"`
+	} `yaml:"clickup"`
 	RabbitMQ struct {
 		URL      string `yaml:"url"`
 		Host     string `yaml:"host"`

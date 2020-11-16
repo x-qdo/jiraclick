@@ -11,4 +11,5 @@ metrics:
   port: 9090
 clickup:
   token: "pk_2662780_IVZVJKU9WJ7E3B2LACT4V9EVK6I8G46C"
-  list_id: "10942379"
+  list: "10942379"
+  host: "https://api.clickup.com/api/v2"
