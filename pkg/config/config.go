@@ -13,6 +13,12 @@ type Config struct {
 		Token string `yaml:"token"`
 		List  string `yaml:"list"`
 	} `yaml:"clickup"`
+	Jira struct {
+		Username string `yaml:"username"`
+		ApiToken string `yaml:"apitoken"`
+		BaseURL  string `yaml:"baseurl"`
+		Project  string `yaml:"project"'`
+	} `yaml:"jira"`
 	RabbitMQ struct {
 		URL      string `yaml:"url"`
 		Host     string `yaml:"host"`

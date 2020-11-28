@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"x-qdo/jiraclick/pkg/contract"
+	"x-qdo/jiraclick/pkg/model"
 	"x-qdo/jiraclick/pkg/provider"
 )
 
@@ -21,9 +22,18 @@ func NewEventPublisher(queueProvider *provider.RabbitChannel) (*EventPublisher, 
 	}, nil
 }
 
-func (p *EventPublisher) ClickUpTaskCreated(msg *provider.PutTaskResponse, slackChannel string) error {
-	routingKey := fmt.Sprintf(string(contract.TaskCreatedClickUpEvent), slackChannel)
-	if err := p.queueProvider.Publish(msg, contract.BRPEventsExchange, routingKey, true); err != nil {
+func (p *EventPublisher) ClickUpTaskCreated(payload model.TaskPayload) error {
+	routingKey := fmt.Sprintf(string(contract.TaskCreatedClickUpEvent), payload.SlackChannel)
+	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
+	}
+
+	return nil
+}
+
+func (p *EventPublisher) JiraTaskCreated(payload model.TaskPayload) error {
+	routingKey := fmt.Sprintf(string(contract.TaskCreatedJiraEvent), payload.SlackChannel)
+	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
 	}
 

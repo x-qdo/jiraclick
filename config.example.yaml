@@ -13,3 +13,8 @@ clickup:
   host: "https://api.clickup.com/api/v2"
   token: "pk_"
   list_id: "123"
+jira:
+  username: ""
+  apitoken: ""
+  baseurl: "https://iiziservices.atlassian.net"
+  project: "DOPS"

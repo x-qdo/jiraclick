@@ -2,16 +2,15 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/consumer"
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/provider"
 )
 
 func NewWorkerCmd(
-	cfg *config.Config,
 	queue *provider.RabbitChannel,
 	clickup *provider.ClickUpAPIClient,
+	jira *provider.JiraClient,
 ) *cobra.Command {
 	return &cobra.Command{
 		Use:   "worker",
@@ -24,7 +23,7 @@ func NewWorkerCmd(
 			)
 
 			go func() {
-				cons, err = consumer.NewActionsConsumer(cfg, queue, clickup)
+				cons, err = consumer.NewActionsConsumer(jira, queue, clickup)
 				if err != nil {
 					panic(err)
 				}

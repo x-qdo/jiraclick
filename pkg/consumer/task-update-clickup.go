@@ -10,23 +10,22 @@ import (
 	"x-qdo/jiraclick/pkg/publisher"
 )
 
-type TaskCreateClickupAction struct {
+type TaskUpdateClickupAction struct {
 	client    *provider.ClickUpAPIClient
 	publisher *publisher.EventPublisher
 }
 
-func NewTaskCreateClickupAction(clickup *provider.ClickUpAPIClient, p *publisher.EventPublisher) (contract.Action, error) {
-	return &TaskCreateClickupAction{
+func NewTaskUpdateClickupAction(clickup *provider.ClickUpAPIClient, p *publisher.EventPublisher) (contract.Action, error) {
+	return &TaskUpdateClickupAction{
 		client:    clickup,
 		publisher: p,
 	}, nil
 }
 
-func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
+func (a *TaskUpdateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 
 	var (
 		inputBody inputBody
-		response  *provider.PutClickUpTaskResponse
 		payload   model.TaskPayload
 	)
 
@@ -45,30 +44,22 @@ func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 		return errors.Wrap(err, "Can't create task request")
 	}
 
-	response, err = a.client.CreateTask(request)
+	err = a.client.UpdateTask(payload.ClickupID, request)
 	if err != nil {
 		return errors.Wrap(err, "Can't create a task in ClickUp")
-	}
-
-	payload.ClickupID = response.ID
-	payload.ClickupUrl = response.Url
-	err = a.publisher.ClickUpTaskCreated(payload)
-	if err != nil {
-		return err
 	}
 
 	return nil
 }
 
-func (a *TaskCreateClickupAction) generateTaskRequest(payload model.TaskPayload) (*provider.PutClickUpTaskRequest, error) {
+func (a *TaskUpdateClickupAction) generateTaskRequest(payload model.TaskPayload) (*provider.PutClickUpTaskRequest, error) {
 	request := new(provider.PutClickUpTaskRequest)
 
 	request.Name = payload.Title
-	request.NotifyAll = false
-	request.Status = "To Do"
-	request.Description = payload.Description + "\n" + payload.AC
+	request.Description = payload.Description + "\n\n" + payload.AC
 	request.AddCustomField(provider.RequestedBy, payload.SlackReporter)
 	request.AddCustomField(provider.SlackLink, payload.Details["slack"])
+	request.AddCustomField(provider.JiraLink, payload.JiraUrl)
 
 	return request, nil
 }

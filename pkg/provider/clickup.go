@@ -29,18 +29,17 @@ type ClickUpAPIClient struct {
 	}
 }
 
-type PutTaskRequest struct {
+type PutClickUpTaskRequest struct {
 	Name         string        `json:"name"`
 	Description  string        `json:"description"`
-	Status       string        `json:"status"`
-	NotifyAll    bool          `json:"notify_all"`
+	Status       string        `json:"status,omitempty"`
+	NotifyAll    bool          `json:"notify_all,omitempty"`
 	CustomFields []customField `json:"custom_fields,omitempty"`
 }
 
-type PutTaskResponse struct {
-	ID         string `json:"id"`
-	Url        string `json:"url"`
-	SlackBotID string `json:"slack_bot_id,omitempty"`
+type PutClickUpTaskResponse struct {
+	ID  string `json:"id"`
+	Url string `json:"url"`
 }
 
 type customField struct {
@@ -48,7 +47,7 @@ type customField struct {
 	Value interface{}    `json:"value"`
 }
 
-func (t *PutTaskRequest) AddCustomField(id CustomFieldKey, value interface{}) {
+func (t *PutClickUpTaskRequest) AddCustomField(id CustomFieldKey, value interface{}) {
 	t.CustomFields = append(t.CustomFields, customField{ID: id, Value: value})
 }
 
@@ -61,8 +60,8 @@ func NewClickUpClient(cfg *config.Config) (*ClickUpAPIClient, error) {
 	return client, nil
 }
 
-func (c *ClickUpAPIClient) CreateTask(request *PutTaskRequest) (*PutTaskResponse, error) {
-	var response PutTaskResponse
+func (c *ClickUpAPIClient) CreateTask(request *PutClickUpTaskRequest) (*PutClickUpTaskResponse, error) {
+	var response PutClickUpTaskResponse
 	body, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -86,4 +85,60 @@ func (c *ClickUpAPIClient) CreateTask(request *PutTaskRequest) (*PutTaskResponse
 	}
 
 	return &response, nil
+}
+
+func (c *ClickUpAPIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) error {
+	body, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+	req, _ := http.NewRequest("PUT", c.options.host+"/task/"+taskID, bytes.NewBuffer(body))
+	req.Header.Add("Authorization", c.options.token)
+	req.Header.Add("Content-Type", "application/json")
+
+	r, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return fmt.Errorf("ClickUp API error: %s", r.Status)
+	}
+	defer r.Body.Close()
+
+	var customField customField
+	for _, customField = range request.CustomFields {
+		err = c.SetCustomField(taskID, string(customField.ID), customField.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *ClickUpAPIClient) SetCustomField(taskID, customFieldID string, value interface{}) error {
+	var request struct {
+		Value interface{} `json:"value"`
+	}
+	request.Value = value
+	body, err := json.Marshal(request)
+	if err != nil {
+		return err
+	}
+	req, _ := http.NewRequest("POST", c.options.host+"/task/"+taskID+"/field/"+customFieldID, bytes.NewBuffer(body))
+	req.Header.Add("Authorization", c.options.token)
+	req.Header.Add("Content-Type", "application/json")
+
+	r, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return fmt.Errorf("ClickUp API error: %s", r.Status)
+	}
+	defer r.Body.Close()
+
+	return nil
 }

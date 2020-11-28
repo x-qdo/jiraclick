@@ -1,26 +1,37 @@
 package consumer
 
 import (
-	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/provider"
 	"x-qdo/jiraclick/pkg/publisher"
 )
 
-func MakeAction(key contract.RoutingKey, cfg *config.Config, clickup *provider.ClickUpAPIClient, queueProvider *provider.RabbitChannel) (contract.Action, error) {
+type inputBody struct {
+	ID          string `json:"id"`
+	DisplayName string `json:"displayName"`
+	Data        struct {
+		Payload string `json:"payload"`
+	} `json:"data"`
+}
+
+func MakeAction(
+	key contract.RoutingKey,
+	jira *provider.JiraClient,
+	clickup *provider.ClickUpAPIClient,
+	publisher *publisher.EventPublisher,
+) (contract.Action, error) {
 	var (
 		action contract.Action
 		err    error
 	)
 
-	p, err := publisher.NewEventPublisher(queueProvider)
-	if err != nil {
-		return nil, err
-	}
-
 	switch key {
 	case contract.TaskCreateClickUp:
-		action, err = NewTaskCreateClickupAction(cfg, clickup, p)
+		action, err = NewTaskCreateClickupAction(clickup, publisher)
+	case contract.TaskCreateJira:
+		action, err = NewTaskCreateJiraAction(jira, publisher)
+	case contract.TaskUpdateClickUp:
+		action, err = NewTaskUpdateClickupAction(clickup, publisher)
 	}
 
 	if err != nil {

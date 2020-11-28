@@ -44,7 +44,12 @@ func NewContext(configPath string) (*Context, error) {
 		panic(err)
 	}
 
-	setCommands(&ctx, cfg, amqpProvider, clickupProvider)
+	jiraProvider, err := provider.NewJiraClient(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	setCommands(&ctx, cfg, amqpProvider, clickupProvider, jiraProvider)
 
 	return &ctx, nil
 }
@@ -54,8 +59,9 @@ func setCommands(
 	cfg *config.Config,
 	queue *provider.RabbitChannel,
 	clickup *provider.ClickUpAPIClient,
+	jira *provider.JiraClient,
 ) {
-	workerCmd := cmd.NewWorkerCmd(cfg, queue, clickup)
+	workerCmd := cmd.NewWorkerCmd(queue, clickup, jira)
 	httpHandlerCmd := cmd.NewHttpHandlerCmd(cfg)
 
 	rootCmd := cmd.NewRootCmd()
