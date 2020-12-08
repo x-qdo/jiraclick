@@ -8,6 +8,7 @@ import (
 	"x-qdo/jiraclick/cmd"
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/provider"
+	"x-qdo/jiraclick/pkg/provider/clickup"
 )
 
 type Context struct {
@@ -39,7 +40,7 @@ func NewContext(configPath string) (*Context, error) {
 		panic(err)
 	}
 
-	clickupProvider, err := provider.NewClickUpClient(cfg)
+	clickupProvider, err := clickup.NewClickUpClient(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +50,7 @@ func NewContext(configPath string) (*Context, error) {
 		panic(err)
 	}
 
-	setCommands(&ctx, cfg, amqpProvider, clickupProvider, jiraProvider)
+	setCommands(&ctx, cfg, amqpProvider, clickupProvider, jiraProvider, logger)
 
 	return &ctx, nil
 }
@@ -58,16 +59,17 @@ func setCommands(
 	ctx *Context,
 	cfg *config.Config,
 	queue *provider.RabbitChannel,
-	clickup *provider.ClickUpAPIClient,
+	clickup *clickup.ClickUpAPIClient,
 	jira *provider.JiraClient,
+	logger *logrus.Logger,
 ) {
 	workerCmd := cmd.NewWorkerCmd(queue, clickup, jira)
-	httpHandlerCmd := cmd.NewHttpHandlerCmd(cfg)
+	httpHandlerCmd := cmd.NewHttpHandlerCmd(cfg, logger, queue, clickup)
 
 	rootCmd := cmd.NewRootCmd()
 
 	rootCmd.AddCommand(workerCmd)
-	workerCmd.AddCommand(httpHandlerCmd)
+	rootCmd.AddCommand(httpHandlerCmd)
 
 	ctx.RootCmd = rootCmd
 }

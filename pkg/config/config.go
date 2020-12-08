@@ -9,9 +9,10 @@ import (
 type Config struct {
 	Debug   bool `yaml:"debug"`
 	ClickUp struct {
-		Host  string `yaml:"host"`
-		Token string `yaml:"token"`
-		List  string `yaml:"list"`
+		Host          string `yaml:"host"`
+		Token         string `yaml:"token"`
+		List          string `yaml:"list"`
+		WebhookSecret string `yaml:"webhooksecret"`
 	} `yaml:"clickup"`
 	Jira struct {
 		Username string `yaml:"username"`

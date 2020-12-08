@@ -6,16 +6,16 @@ import (
 	"github.com/streadway/amqp"
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
-	"x-qdo/jiraclick/pkg/provider"
+	"x-qdo/jiraclick/pkg/provider/clickup"
 	"x-qdo/jiraclick/pkg/publisher"
 )
 
 type TaskCreateClickupAction struct {
-	client    *provider.ClickUpAPIClient
+	client    *clickup.ClickUpAPIClient
 	publisher *publisher.EventPublisher
 }
 
-func NewTaskCreateClickupAction(clickup *provider.ClickUpAPIClient, p *publisher.EventPublisher) (contract.Action, error) {
+func NewTaskCreateClickupAction(clickup *clickup.ClickUpAPIClient, p *publisher.EventPublisher) (contract.Action, error) {
 	return &TaskCreateClickupAction{
 		client:    clickup,
 		publisher: p,
@@ -26,7 +26,7 @@ func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 
 	var (
 		inputBody inputBody
-		response  *provider.PutClickUpTaskResponse
+		task      *clickup.Task
 		payload   model.TaskPayload
 	)
 
@@ -45,13 +45,13 @@ func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 		return errors.Wrap(err, "Can't create task request")
 	}
 
-	response, err = a.client.CreateTask(request)
+	task, err = a.client.CreateTask(request)
 	if err != nil {
 		return errors.Wrap(err, "Can't create a task in ClickUp")
 	}
 
-	payload.ClickupID = response.ID
-	payload.ClickupUrl = response.Url
+	payload.ClickupID = task.ID
+	payload.ClickupUrl = task.Url
 	err = a.publisher.ClickUpTaskCreated(payload)
 	if err != nil {
 		return err
@@ -60,15 +60,16 @@ func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 	return nil
 }
 
-func (a *TaskCreateClickupAction) generateTaskRequest(payload model.TaskPayload) (*provider.PutClickUpTaskRequest, error) {
-	request := new(provider.PutClickUpTaskRequest)
+func (a *TaskCreateClickupAction) generateTaskRequest(payload model.TaskPayload) (*clickup.PutClickUpTaskRequest, error) {
+	request := new(clickup.PutClickUpTaskRequest)
 
 	request.Name = payload.Title
 	request.NotifyAll = false
 	request.Status = "To Do"
 	request.Description = payload.Description + "\n" + payload.AC
-	request.AddCustomField(provider.RequestedBy, payload.SlackReporter)
-	request.AddCustomField(provider.SlackLink, payload.Details["slack"])
+	request.AddCustomField(clickup.RequestedBy, payload.SlackReporter)
+	request.AddCustomField(clickup.SlackLink, payload.Details["slack"])
+	request.AddCustomField(clickup.Synced, true)
 
 	return request, nil
 }

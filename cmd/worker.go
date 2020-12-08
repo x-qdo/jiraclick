@@ -5,11 +5,12 @@ import (
 	"x-qdo/jiraclick/pkg/consumer"
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/provider"
+	"x-qdo/jiraclick/pkg/provider/clickup"
 )
 
 func NewWorkerCmd(
 	queue *provider.RabbitChannel,
-	clickup *provider.ClickUpAPIClient,
+	clickup *clickup.ClickUpAPIClient,
 	jira *provider.JiraClient,
 ) *cobra.Command {
 	return &cobra.Command{

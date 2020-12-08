@@ -38,7 +38,7 @@ func main() {
 
 func waitShutdown(cancelF context.CancelFunc) {
 	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT)
 
 	select {
 	case s := <-sigint:

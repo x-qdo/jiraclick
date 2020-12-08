@@ -13,6 +13,7 @@ clickup:
   host: "https://api.clickup.com/api/v2"
   token: "pk_"
   list_id: "123"
+  webhook_secret: "2134123wertwe"
 jira:
   username: ""
   apitoken: ""

@@ -3,6 +3,7 @@ package consumer
 import (
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/provider"
+	"x-qdo/jiraclick/pkg/provider/clickup"
 	"x-qdo/jiraclick/pkg/publisher"
 )
 
@@ -17,7 +18,7 @@ type inputBody struct {
 func MakeAction(
 	key contract.RoutingKey,
 	jira *provider.JiraClient,
-	clickup *provider.ClickUpAPIClient,
+	clickup *clickup.ClickUpAPIClient,
 	publisher *publisher.EventPublisher,
 ) (contract.Action, error) {
 	var (

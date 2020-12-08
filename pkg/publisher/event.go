@@ -39,3 +39,12 @@ func (p *EventPublisher) JiraTaskCreated(payload model.TaskPayload) error {
 
 	return nil
 }
+
+func (p *EventPublisher) ClickUpTaskUpdated(payload model.TaskChanges, slackChannel string) error {
+	routingKey := fmt.Sprintf(string(contract.TaskUpdatedClickUpEvent), slackChannel)
+	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
+	}
+
+	return nil
+}

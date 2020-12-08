@@ -274,11 +274,15 @@ func (ch *RabbitChannel) listenQueue(routingKey string, msgChannel <-chan amqp.D
 	defer ch.waitGroup.Done()
 
 	done := false
+	processing := false
 	ctx, _ := context.WithCancel(ch.ctx)
 
 	for {
 		select {
 		case delivery, ok := <-msgChannel:
+			processing = true
+			ch.logger.Debug(fmt.Sprintf("comsumer %s: delivery recieved", routingKey))
+
 			if !ok {
 				if _, _, err := ch.channel.Get(routingKey, true); err != nil {
 					ch.logger.Error(err)
@@ -296,15 +300,20 @@ func (ch *RabbitChannel) listenQueue(routingKey string, msgChannel <-chan amqp.D
 					ch.logger.Error(fmt.Errorf("%s: acknowledger failed with an error: %w", routingKey, err))
 				}
 			}
-
+			processing = false
 			if done && len(msgChannel) == 0 {
 				return
 			}
 		case <-ctx.Done():
+			ch.logger.Debug(fmt.Sprintf("comsumer %s done", routingKey))
 			if err := ch.channel.Cancel(routingKey, false); err != nil {
 				ch.logger.Error(err)
 			}
-			done = true
+			if processing {
+				done = true
+			} else {
+				return
+			}
 		}
 		if ch.IsAlive() != true {
 			ch.logger.Debug(fmt.Sprintf("Consumer %s has faced with closed channel", routingKey))

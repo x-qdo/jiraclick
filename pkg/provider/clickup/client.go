@@ -1,4 +1,4 @@
-package provider
+package clickup
 
 import (
 	"bytes"
@@ -6,18 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"x-qdo/jiraclick/pkg/config"
-)
-
-type CustomFieldKey string
-
-const (
-	ApprovedBy       CustomFieldKey = "065a1567-0655-4a7e-aefe-e179f7983069"
-	BillableHours    CustomFieldKey = "074e1387-e7b8-41c6-92db-fbada8f8486c"
-	JiraLink         CustomFieldKey = "349fbec4-f71f-4cee-9861-c112e253a6e1"
-	SlackLink        CustomFieldKey = "517a450f-ce8b-4683-b34a-616d5c3b0fb4"
-	DoneNotification CustomFieldKey = "86477c9c-b494-423b-8dc0-3a49734b8b28"
-	Synced           CustomFieldKey = "926d35a9-5f70-4f54-bc07-d11b82d4cf21"
-	RequestedBy      CustomFieldKey = "eb30f61c-dbad-4ad4-896d-15d2a239cb69"
 )
 
 type ClickUpAPIClient struct {
@@ -34,21 +22,11 @@ type PutClickUpTaskRequest struct {
 	Description  string        `json:"description"`
 	Status       string        `json:"status,omitempty"`
 	NotifyAll    bool          `json:"notify_all,omitempty"`
-	CustomFields []customField `json:"custom_fields,omitempty"`
-}
-
-type PutClickUpTaskResponse struct {
-	ID  string `json:"id"`
-	Url string `json:"url"`
-}
-
-type customField struct {
-	ID    CustomFieldKey `json:"id"`
-	Value interface{}    `json:"value"`
+	CustomFields []CustomField `json:"custom_fields,omitempty"`
 }
 
 func (t *PutClickUpTaskRequest) AddCustomField(id CustomFieldKey, value interface{}) {
-	t.CustomFields = append(t.CustomFields, customField{ID: id, Value: value})
+	t.CustomFields = append(t.CustomFields, CustomField{ID: id, Value: value})
 }
 
 func NewClickUpClient(cfg *config.Config) (*ClickUpAPIClient, error) {
@@ -60,8 +38,8 @@ func NewClickUpClient(cfg *config.Config) (*ClickUpAPIClient, error) {
 	return client, nil
 }
 
-func (c *ClickUpAPIClient) CreateTask(request *PutClickUpTaskRequest) (*PutClickUpTaskResponse, error) {
-	var response PutClickUpTaskResponse
+func (c *ClickUpAPIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
+	var task Task
 	body, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -79,12 +57,12 @@ func (c *ClickUpAPIClient) CreateTask(request *PutClickUpTaskRequest) (*PutClick
 		return nil, fmt.Errorf("ClickUp API error: %s", r.Status)
 	}
 	defer r.Body.Close()
-	err = json.NewDecoder(r.Body).Decode(&response)
+	err = json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
 		return nil, err
 	}
 
-	return &response, nil
+	return &task, nil
 }
 
 func (c *ClickUpAPIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) error {
@@ -106,7 +84,7 @@ func (c *ClickUpAPIClient) UpdateTask(taskID string, request *PutClickUpTaskRequ
 	}
 	defer r.Body.Close()
 
-	var customField customField
+	var customField CustomField
 	for _, customField = range request.CustomFields {
 		err = c.SetCustomField(taskID, string(customField.ID), customField.Value)
 		if err != nil {
@@ -141,4 +119,27 @@ func (c *ClickUpAPIClient) SetCustomField(taskID, customFieldID string, value in
 	defer r.Body.Close()
 
 	return nil
+}
+
+func (c *ClickUpAPIClient) GetTask(taskID string) (*Task, error) {
+	var task Task
+	req, _ := http.NewRequest("GET", c.options.host+"/task/"+taskID, nil)
+	req.Header.Add("Authorization", c.options.token)
+	req.Header.Add("Content-Type", "application/json")
+
+	r, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("ClickUp API error: %s", r.Status)
+	}
+	defer r.Body.Close()
+	err = json.NewDecoder(r.Body).Decode(&task)
+	if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
 }

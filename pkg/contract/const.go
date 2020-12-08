@@ -15,4 +15,5 @@ const (
 
 	TaskCreatedClickUpEvent RoutingKey = "t:%s:clickup:task.created"
 	TaskCreatedJiraEvent    RoutingKey = "t:%s:jira:task.created"
+	TaskUpdatedClickUpEvent RoutingKey = "t:%s:clickup:task.updated"
 )
