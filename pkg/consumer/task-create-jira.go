@@ -50,7 +50,7 @@ func (a *TaskCreateJiraAction) ProcessAction(delivery amqp.Delivery) error {
 	}
 
 	payload.JiraID = response.ID
-	payload.JiraUrl = response.Url
+	payload.Details["jira_url"] = response.Url
 	err = a.publisher.JiraTaskCreated(payload)
 	if err != nil {
 		return err

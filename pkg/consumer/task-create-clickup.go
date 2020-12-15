@@ -40,7 +40,7 @@ func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 		return errors.Wrap(err, "Can't unmarshall task body")
 	}
 
-	request, err := a.generateTaskRequest(payload)
+	request, err := a.generateTaskRequest(&payload)
 	if err != nil {
 		return errors.Wrap(err, "Can't create task request")
 	}
@@ -51,7 +51,7 @@ func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 	}
 
 	payload.ClickupID = task.ID
-	payload.ClickupUrl = task.Url
+	payload.Details["clickup_url"] = task.Url
 	err = a.publisher.ClickUpTaskCreated(payload)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 	return nil
 }
 
-func (a *TaskCreateClickupAction) generateTaskRequest(payload model.TaskPayload) (*clickup.PutClickUpTaskRequest, error) {
+func (a *TaskCreateClickupAction) generateTaskRequest(payload *model.TaskPayload) (*clickup.PutClickUpTaskRequest, error) {
 	request := new(clickup.PutClickUpTaskRequest)
 
 	request.Name = payload.Title
@@ -70,6 +70,13 @@ func (a *TaskCreateClickupAction) generateTaskRequest(payload model.TaskPayload)
 	request.AddCustomField(clickup.RequestedBy, payload.SlackReporter)
 	request.AddCustomField(clickup.SlackLink, payload.Details["slack"])
 	request.AddCustomField(clickup.Synced, true)
+
+	if payload.Type == model.IncidentTaskType {
+		request.Name = "[IN] " + request.Name
+		payload.Title = request.Name
+		request.Tags = make([]string, 0)
+		request.Tags = append(request.Tags, string(payload.Type))
+	}
 
 	return request, nil
 }

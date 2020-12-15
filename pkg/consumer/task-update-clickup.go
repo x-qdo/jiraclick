@@ -59,7 +59,7 @@ func (a *TaskUpdateClickupAction) generateTaskRequest(payload model.TaskPayload)
 	request.Description = payload.Description + "\n\n" + payload.AC
 	request.AddCustomField(clickup.RequestedBy, payload.SlackReporter)
 	request.AddCustomField(clickup.SlackLink, payload.Details["slack"])
-	request.AddCustomField(clickup.JiraLink, payload.JiraUrl)
+	request.AddCustomField(clickup.JiraLink, payload.Details["clickup_url"])
 
 	return request, nil
 }

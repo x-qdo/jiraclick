@@ -2,8 +2,16 @@ package model
 
 import "strings"
 
+type taskType string
+
+const (
+	RegularTaskType  taskType = "regular"
+	IncidentTaskType taskType = "incident"
+)
+
 type TaskPayload struct {
 	ID             string            `json:"id"`
+	Type           taskType          `json:"type"`
 	Title          string            `json:"title"`
 	Description    string            `json:"description"`
 	Details        map[string]string `json:"details"`
@@ -14,9 +22,7 @@ type TaskPayload struct {
 	DueDate        string            `json:"dueDate"`
 	AC             string            `json:"ac"`
 	ClickupID      string            `json:"clickup_id"`
-	ClickupUrl     string            `json:"clickup_url"`
 	JiraID         string            `json:"jira_id"`
-	JiraUrl        string            `json:"jira_url"`
 }
 
 func (p *TaskPayload) GetReporterEmail() string {

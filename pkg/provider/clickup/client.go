@@ -23,6 +23,7 @@ type PutClickUpTaskRequest struct {
 	Status       string        `json:"status,omitempty"`
 	NotifyAll    bool          `json:"notify_all,omitempty"`
 	CustomFields []CustomField `json:"custom_fields,omitempty"`
+	Tags         []string      `json:"tags"`
 }
 
 func (t *PutClickUpTaskRequest) AddCustomField(id CustomFieldKey, value interface{}) {
