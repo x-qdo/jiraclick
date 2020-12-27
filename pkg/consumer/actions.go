@@ -4,6 +4,7 @@ import (
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/provider"
 	"x-qdo/jiraclick/pkg/provider/clickup"
+	"x-qdo/jiraclick/pkg/provider/jira"
 	"x-qdo/jiraclick/pkg/publisher"
 )
 
@@ -16,10 +17,10 @@ var actionRoutingKeys = [3]contract.RoutingKey{
 type ActionsConsumer struct {
 	queueProvider   *provider.RabbitChannel
 	clickupProvider *clickup.ClickUpAPIClient
-	jiraProvider    *provider.JiraClient
+	jiraProvider    *jira.ConnectorPool
 }
 
-func NewActionsConsumer(jiraProvider *provider.JiraClient, queueProvider *provider.RabbitChannel, clickup *clickup.ClickUpAPIClient) (*ActionsConsumer, error) {
+func NewActionsConsumer(jiraProvider *jira.ConnectorPool, queueProvider *provider.RabbitChannel, clickup *clickup.ClickUpAPIClient) (*ActionsConsumer, error) {
 
 	if err := queueProvider.DefineExchange(contract.BRPActionsExchange, true); err != nil {
 		return nil, err

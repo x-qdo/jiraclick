@@ -9,6 +9,7 @@ import (
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/provider"
 	"x-qdo/jiraclick/pkg/provider/clickup"
+	"x-qdo/jiraclick/pkg/provider/jira"
 )
 
 type Context struct {
@@ -45,7 +46,7 @@ func NewContext(configPath string) (*Context, error) {
 		panic(err)
 	}
 
-	jiraProvider, err := provider.NewJiraClient(cfg)
+	jiraProvider, err := jira.NewJiraConnector(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -60,7 +61,7 @@ func setCommands(
 	cfg *config.Config,
 	queue *provider.RabbitChannel,
 	clickup *clickup.ClickUpAPIClient,
-	jira *provider.JiraClient,
+	jira *jira.ConnectorPool,
 	logger *logrus.Logger,
 ) {
 	workerCmd := cmd.NewWorkerCmd(queue, clickup, jira)

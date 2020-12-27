@@ -14,12 +14,7 @@ type Config struct {
 		List          string `yaml:"list"`
 		WebhookSecret string `yaml:"webhooksecret"`
 	} `yaml:"clickup"`
-	Jira struct {
-		Username string `yaml:"username"`
-		ApiToken string `yaml:"apitoken"`
-		BaseURL  string `yaml:"baseurl"`
-		Project  string `yaml:"project"'`
-	} `yaml:"jira"`
+	Jira     map[string]JiraInstance `yaml:"jira"`
 	RabbitMQ struct {
 		URL      string `yaml:"url"`
 		Host     string `yaml:"host"`
@@ -31,6 +26,13 @@ type Config struct {
 	HttpHandler struct {
 		Port string `yaml:"port"`
 	} `yaml:"httphandler"`
+}
+
+type JiraInstance struct {
+	Username string `yaml:"username"`
+	ApiToken string `yaml:"apitoken"`
+	BaseURL  string `yaml:"baseurl"`
+	Project  string `yaml:"project"`
 }
 
 func NewConfig(path string) (*Config, error) {

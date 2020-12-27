@@ -7,16 +7,16 @@ import (
 	"github.com/trivago/tgo/tcontainer"
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
-	"x-qdo/jiraclick/pkg/provider"
+	"x-qdo/jiraclick/pkg/provider/jira"
 	"x-qdo/jiraclick/pkg/publisher"
 )
 
 type TaskCreateJiraAction struct {
-	client    *provider.JiraClient
+	client    *jira.ConnectorPool
 	publisher *publisher.EventPublisher
 }
 
-func NewTaskCreateJiraAction(jira *provider.JiraClient, p *publisher.EventPublisher) (contract.Action, error) {
+func NewTaskCreateJiraAction(jira *jira.ConnectorPool, p *publisher.EventPublisher) (contract.Action, error) {
 	return &TaskCreateJiraAction{
 		client:    jira,
 		publisher: p,
@@ -44,7 +44,7 @@ func (a *TaskCreateJiraAction) ProcessAction(delivery amqp.Delivery) error {
 		return errors.Wrap(err, "Can't create task request")
 	}
 
-	response, err := a.client.CreateIssue(task)
+	response, err := a.client.GetInstance(payload.SlackChannel).CreateIssue(task)
 	if err != nil {
 		return errors.Wrap(err, "Can't create task in Jira")
 	}
@@ -59,8 +59,8 @@ func (a *TaskCreateJiraAction) ProcessAction(delivery amqp.Delivery) error {
 	return nil
 }
 
-func (a *TaskCreateJiraAction) generateTaskRequest(payload model.TaskPayload) (*provider.JiraTask, error) {
-	task := new(provider.JiraTask)
+func (a *TaskCreateJiraAction) generateTaskRequest(payload model.TaskPayload) (*jira.JiraTask, error) {
+	task := new(jira.JiraTask)
 
 	task.Title = payload.Title
 	task.Reporter = payload.GetReporterEmail()

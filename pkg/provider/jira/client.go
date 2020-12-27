@@ -1,4 +1,4 @@
-package provider
+package jira
 
 import (
 	"bytes"
@@ -6,12 +6,17 @@ import (
 	"github.com/andygrunwald/go-jira"
 	"github.com/pkg/errors"
 	"github.com/trivago/tgo/tcontainer"
-	"x-qdo/jiraclick/pkg/config"
 )
 
 const LinkToJiraTask = "%s/browse/%s"
 
-type JiraClient struct {
+type ClientInterface interface {
+	CreateIssue(task *JiraTask) (*PutJiraTaskResponse, error)
+	UpdateIssue() error
+	FindUserByEmail(email string) *jira.User
+}
+
+type jiraClient struct {
 	client  *jira.Client
 	project string
 	baseURL string
@@ -31,25 +36,7 @@ type PutJiraTaskResponse struct {
 	Url string `json:"url"`
 }
 
-func NewJiraClient(cfg *config.Config) (*JiraClient, error) {
-	tp := jira.BasicAuthTransport{
-		Username: cfg.Jira.Username,
-		Password: cfg.Jira.ApiToken,
-	}
-
-	client, err := jira.NewClient(tp.Client(), cfg.Jira.BaseURL)
-	if err != nil {
-		return nil, err
-	}
-
-	return &JiraClient{
-		client:  client,
-		project: cfg.Jira.Project,
-		baseURL: cfg.Jira.BaseURL,
-	}, nil
-}
-
-func (c *JiraClient) CreateIssue(task *JiraTask) (*PutJiraTaskResponse, error) {
+func (c *jiraClient) CreateIssue(task *JiraTask) (*PutJiraTaskResponse, error) {
 	var response PutJiraTaskResponse
 
 	i := jira.Issue{
@@ -81,11 +68,11 @@ func (c *JiraClient) CreateIssue(task *JiraTask) (*PutJiraTaskResponse, error) {
 	return &response, nil
 }
 
-func (c *JiraClient) UpdateIssue() error {
+func (c *jiraClient) UpdateIssue() error {
 	return nil
 }
 
-func (c *JiraClient) FindUserByEmail(email string) *jira.User {
+func (c *jiraClient) FindUserByEmail(email string) *jira.User {
 	users, _, err := c.client.User.Find(email)
 	if err != nil {
 		return nil
