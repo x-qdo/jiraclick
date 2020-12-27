@@ -10,12 +10,13 @@ http:
 metrics:
   port: 9090
 clickup:
-  host: "https://api.clickup.com/api/v2"
+  webhooksecret: ""
   token: "pk_"
-  list_id: "123"
-  webhook_secret: "2134123wertwe"
+  list: "10942379"
+  host: "https://api.clickup.com/api/v2"
 jira:
-  username: ""
-  apitoken: ""
-  baseurl: "https://iiziservices.atlassian.net"
-  project: "DOPS"
+  GQCCU8SCW:
+    username: ""
+    apitoken: ""
+    baseurl: "https://iiziservices.atlassian.net"
+    project: "DOPS"

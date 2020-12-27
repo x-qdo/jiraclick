@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"github.com/streadway/amqp"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
+
 	"x-qdo/jiraclick/pkg/config"
 )
 
@@ -33,7 +35,12 @@ type consumer struct {
 	callback     messageListener
 }
 
-func NewRabbitChannel(ctx context.Context, wg *sync.WaitGroup, cfg *config.Config, logger logrus.FieldLogger) (*RabbitChannel, error) {
+func NewRabbitChannel(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	cfg *config.Config,
+	logger logrus.FieldLogger,
+) (*RabbitChannel, error) {
 	ch := new(RabbitChannel)
 
 	url := cfg.RabbitMQ.URL
@@ -42,7 +49,7 @@ func NewRabbitChannel(ctx context.Context, wg *sync.WaitGroup, cfg *config.Confi
 		logger.Info("RabbitMQ.URL not found, building from components")
 		url = "amqp://" + cfg.RabbitMQ.User + ":" + cfg.RabbitMQ.Password + "@" + cfg.RabbitMQ.Host + ":" + cfg.RabbitMQ.Port
 		if cfg.RabbitMQ.Vhost != "" {
-			url = url + cfg.RabbitMQ.Vhost
+			url += cfg.RabbitMQ.Vhost
 		}
 		logger.Debug("RabbitMQ.URL: ", url)
 	}
@@ -281,7 +288,7 @@ func (ch *RabbitChannel) listenQueue(routingKey string, msgChannel <-chan amqp.D
 		select {
 		case delivery, ok := <-msgChannel:
 			processing = true
-			ch.logger.Debug(fmt.Sprintf("comsumer %s: delivery recieved", routingKey))
+			ch.logger.Debug(fmt.Sprintf("comsumer %s: delivery received", routingKey))
 
 			if !ok {
 				if _, _, err := ch.channel.Get(routingKey, true); err != nil {
@@ -295,11 +302,10 @@ func (ch *RabbitChannel) listenQueue(routingKey string, msgChannel <-chan amqp.D
 					ch.logger.Error(fmt.Errorf("RabbitMQ: %s: message nacking failed: %w. Consumer is turned off", routingKey, err))
 					return
 				}
-			} else {
-				if err := delivery.Ack(false); err != nil {
-					ch.logger.Error(fmt.Errorf("%s: acknowledger failed with an error: %w", routingKey, err))
-				}
+			} else if err := delivery.Ack(false); err != nil {
+				ch.logger.Error(fmt.Errorf("%s: acknowledger failed with an error: %w", routingKey, err))
 			}
+
 			processing = false
 			if done && len(msgChannel) == 0 {
 				return
@@ -315,7 +321,7 @@ func (ch *RabbitChannel) listenQueue(routingKey string, msgChannel <-chan amqp.D
 				return
 			}
 		}
-		if ch.IsAlive() != true {
+		if !ch.IsAlive() {
 			ch.logger.Debug(fmt.Sprintf("Consumer %s has faced with closed channel", routingKey))
 			return
 		}

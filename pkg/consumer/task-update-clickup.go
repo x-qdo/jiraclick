@@ -2,8 +2,10 @@ package consumer
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
+
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
 	"x-qdo/jiraclick/pkg/provider/clickup"
@@ -11,11 +13,11 @@ import (
 )
 
 type TaskUpdateClickupAction struct {
-	client    *clickup.ClickUpAPIClient
+	client    *clickup.APIClient
 	publisher *publisher.EventPublisher
 }
 
-func NewTaskUpdateClickupAction(clickup *clickup.ClickUpAPIClient, p *publisher.EventPublisher) (contract.Action, error) {
+func NewTaskUpdateClickupAction(clickup *clickup.APIClient, p *publisher.EventPublisher) (contract.Action, error) {
 	return &TaskUpdateClickupAction{
 		client:    clickup,
 		publisher: p,
@@ -23,18 +25,17 @@ func NewTaskUpdateClickupAction(clickup *clickup.ClickUpAPIClient, p *publisher.
 }
 
 func (a *TaskUpdateClickupAction) ProcessAction(delivery amqp.Delivery) error {
-
 	var (
-		inputBody inputBody
-		payload   model.TaskPayload
+		input   inputBody
+		payload model.TaskPayload
 	)
 
-	err := json.Unmarshal(delivery.Body, &inputBody)
+	err := json.Unmarshal(delivery.Body, &input)
 	if err != nil {
 		return errors.Wrap(err, "Can't unmarshall task body")
 	}
 
-	err = json.Unmarshal([]byte(inputBody.Data.Payload), &payload)
+	err = json.Unmarshal([]byte(input.Data.Payload), &payload)
 	if err != nil {
 		return errors.Wrap(err, "Can't unmarshall task body")
 	}

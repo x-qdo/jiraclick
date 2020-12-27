@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
 	"x-qdo/jiraclick/pkg/config"
 )
 
-type ClickUpAPIClient struct {
+type APIClient struct {
 	httpClient http.Client
 	options    struct {
 		host   string
@@ -30,8 +31,8 @@ func (t *PutClickUpTaskRequest) AddCustomField(id CustomFieldKey, value interfac
 	t.CustomFields = append(t.CustomFields, CustomField{ID: id, Value: value})
 }
 
-func NewClickUpClient(cfg *config.Config) (*ClickUpAPIClient, error) {
-	client := new(ClickUpAPIClient)
+func NewClickUpClient(cfg *config.Config) (*APIClient, error) {
+	client := new(APIClient)
 	client.options.host = cfg.ClickUp.Host
 	client.options.token = cfg.ClickUp.Token
 	client.options.listID = cfg.ClickUp.List
@@ -39,13 +40,16 @@ func NewClickUpClient(cfg *config.Config) (*ClickUpAPIClient, error) {
 	return client, nil
 }
 
-func (c *ClickUpAPIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
+func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
 	var task Task
 	body, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
-	req, _ := http.NewRequest("POST", c.options.host+"/list/"+c.options.listID+"/task/", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", c.options.host+"/list/"+c.options.listID+"/task/", bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Authorization", c.options.token)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -66,12 +70,15 @@ func (c *ClickUpAPIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, er
 	return &task, nil
 }
 
-func (c *ClickUpAPIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) error {
+func (c *APIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) error {
 	body, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
-	req, _ := http.NewRequest("PUT", c.options.host+"/task/"+taskID, bytes.NewBuffer(body))
+	req, err := http.NewRequest("PUT", c.options.host+"/task/"+taskID, bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
 	req.Header.Add("Authorization", c.options.token)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -96,7 +103,7 @@ func (c *ClickUpAPIClient) UpdateTask(taskID string, request *PutClickUpTaskRequ
 	return nil
 }
 
-func (c *ClickUpAPIClient) SetCustomField(taskID, customFieldID string, value interface{}) error {
+func (c *APIClient) SetCustomField(taskID, customFieldID string, value interface{}) error {
 	var request struct {
 		Value interface{} `json:"value"`
 	}
@@ -105,7 +112,10 @@ func (c *ClickUpAPIClient) SetCustomField(taskID, customFieldID string, value in
 	if err != nil {
 		return err
 	}
-	req, _ := http.NewRequest("POST", c.options.host+"/task/"+taskID+"/field/"+customFieldID, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", c.options.host+"/task/"+taskID+"/field/"+customFieldID, bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
 	req.Header.Add("Authorization", c.options.token)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -122,9 +132,12 @@ func (c *ClickUpAPIClient) SetCustomField(taskID, customFieldID string, value in
 	return nil
 }
 
-func (c *ClickUpAPIClient) GetTask(taskID string) (*Task, error) {
+func (c *APIClient) GetTask(taskID string) (*Task, error) {
 	var task Task
-	req, _ := http.NewRequest("GET", c.options.host+"/task/"+taskID, nil)
+	req, err := http.NewRequest("GET", c.options.host+"/task/"+taskID, nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Authorization", c.options.token)
 	req.Header.Add("Content-Type", "application/json")
 

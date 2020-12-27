@@ -2,11 +2,13 @@ package handler
 
 import (
 	"bytes"
+	"net/http"
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
+
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/model"
 	"x-qdo/jiraclick/pkg/provider"
@@ -18,14 +20,14 @@ type clickUpWebhooks struct {
 	cfg       *config.Config
 	logger    *logrus.Logger
 	publisher *publisher.EventPublisher
-	clickup   *clickup.ClickUpAPIClient
+	clickup   *clickup.APIClient
 }
 
 func NewClickUpWebhooksHandler(
 	cfg *config.Config,
 	logger *logrus.Logger,
 	queue *provider.RabbitChannel,
-	clickup *clickup.ClickUpAPIClient,
+	clickup *clickup.APIClient,
 ) (*clickUpWebhooks, error) {
 	p, err := publisher.NewEventPublisher(queue)
 	if err != nil {
@@ -112,9 +114,9 @@ func generateTaskChangesByEvent(event *clickup.WebhookEvent) model.TaskChanges {
 		case clickup.TaskUpdated:
 			value = historyItem.After
 		case clickup.TaskStatusUpdated:
-			var after map[string]interface{}
-			after = historyItem.After.(map[string]interface{})
-			value = after["status"]
+			if after, ok := historyItem.After.(map[string]interface{}); ok {
+				value = after["status"]
+			}
 		}
 		changes.AddChange(historyItem.Field, value)
 		changes.Username = historyItem.User.Username
@@ -124,8 +126,14 @@ func generateTaskChangesByEvent(event *clickup.WebhookEvent) model.TaskChanges {
 }
 
 func isEventActual(taskDate, eventDate string) bool {
-	taskTimestamp, _ := strconv.Atoi(taskDate)
-	eventTimestamp, _ := strconv.Atoi(eventDate)
+	taskTimestamp, err := strconv.Atoi(taskDate)
+	if err != nil {
+		return true
+	}
+	eventTimestamp, err := strconv.Atoi(eventDate)
+	if err != nil {
+		return true
+	}
 
 	return taskTimestamp <= eventTimestamp
 }

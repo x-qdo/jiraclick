@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 type Config struct {
@@ -23,14 +24,14 @@ type Config struct {
 		Password string `yaml:"password"`
 		Vhost    string `yaml:"vhost"`
 	} `yaml:"rabbitmq"`
-	HttpHandler struct {
+	HTTPHandler struct {
 		Port string `yaml:"port"`
 	} `yaml:"httphandler"`
 }
 
 type JiraInstance struct {
 	Username string `yaml:"username"`
-	ApiToken string `yaml:"apitoken"`
+	APIToken string `yaml:"apitoken"`
 	BaseURL  string `yaml:"baseurl"`
 	Project  string `yaml:"project"`
 }
@@ -39,12 +40,17 @@ func NewConfig(path string) (*Config, error) {
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
 	viper.AddConfigPath(path)
-	viper.BindEnv("rabbitmq.url")
-	viper.BindEnv("httphandler.port")
+	if err := viper.BindEnv("rabbitmq.url"); err != nil {
+		return nil, err
+	}
+	if err := viper.BindEnv("httphandler.port"); err != nil {
+		return nil, err
+	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
+	// Find and read the config file
+	if err := viper.ReadInConfig(); err != nil {
+		// Handle errors reading the config file
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	var c *Config

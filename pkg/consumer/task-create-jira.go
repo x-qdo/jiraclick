@@ -2,9 +2,11 @@ package consumer
 
 import (
 	"encoding/json"
+
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 	"github.com/trivago/tgo/tcontainer"
+
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
 	"x-qdo/jiraclick/pkg/provider/jira"
@@ -25,24 +27,21 @@ func NewTaskCreateJiraAction(jira *jira.ConnectorPool, p *publisher.EventPublish
 
 func (a *TaskCreateJiraAction) ProcessAction(delivery amqp.Delivery) error {
 	var (
-		inputBody inputBody
-		payload   model.TaskPayload
+		input   inputBody
+		payload model.TaskPayload
 	)
 
-	err := json.Unmarshal(delivery.Body, &inputBody)
+	err := json.Unmarshal(delivery.Body, &input)
 	if err != nil {
 		return errors.Wrap(err, "Can't unmarshall task body")
 	}
 
-	err = json.Unmarshal([]byte(inputBody.Data.Payload), &payload)
+	err = json.Unmarshal([]byte(input.Data.Payload), &payload)
 	if err != nil {
 		return errors.Wrap(err, "Can't unmarshall task body")
 	}
 
-	task, err := a.generateTaskRequest(payload)
-	if err != nil {
-		return errors.Wrap(err, "Can't create task request")
-	}
+	task := a.generateTaskRequest(payload)
 
 	response, err := a.client.GetInstance(payload.SlackChannel).CreateIssue(task)
 	if err != nil {
@@ -50,7 +49,7 @@ func (a *TaskCreateJiraAction) ProcessAction(delivery amqp.Delivery) error {
 	}
 
 	payload.JiraID = response.ID
-	payload.Details["jira_url"] = response.Url
+	payload.Details["jira_url"] = response.URL
 	err = a.publisher.JiraTaskCreated(payload)
 	if err != nil {
 		return err
@@ -59,8 +58,8 @@ func (a *TaskCreateJiraAction) ProcessAction(delivery amqp.Delivery) error {
 	return nil
 }
 
-func (a *TaskCreateJiraAction) generateTaskRequest(payload model.TaskPayload) (*jira.JiraTask, error) {
-	task := new(jira.JiraTask)
+func (a *TaskCreateJiraAction) generateTaskRequest(payload model.TaskPayload) *jira.Task {
+	task := new(jira.Task)
 
 	task.Title = payload.Title
 	task.Reporter = payload.GetReporterEmail()
@@ -73,5 +72,5 @@ func (a *TaskCreateJiraAction) generateTaskRequest(payload model.TaskPayload) (*
 	customFields["customfield_15117"] = map[string]string{"value": "Team DevOps"}
 	task.CustomFields = customFields
 
-	return task, nil
+	return task
 }

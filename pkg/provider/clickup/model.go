@@ -35,7 +35,7 @@ type Task struct {
 	StartDate    interface{}   `json:"start_date,omitempty"`
 	TimeEstimate interface{}   `json:"time_estimate,omitempty"`
 	TimeSpent    interface{}   `json:"time_spent,omitempty"`
-	Url          string        `json:"url"`
+	URL          string        `json:"url"`
 	Archived     bool          `json:"archived"`
 	TeamID       string        `json:"team_id"`
 	CustomFields []CustomField `json:"custom_fields,omitempty"`
@@ -69,14 +69,14 @@ type CustomField struct {
 func (t *Task) GetSlackChannel() string {
 	for _, field := range t.CustomFields {
 		if field.ID == SlackLink {
-			link := field.Value.(string)
-			if reg, err := regexp.Compile(".*archives/(\\w+)/.*"); err == nil {
-				result := reg.FindStringSubmatch(link)
-				if len(result) == 2 {
-					return result[1]
-				}
-			} else {
-				break
+			link, ok := field.Value.(string)
+			if !ok {
+				return ""
+			}
+			reg := regexp.MustCompile(`.*archives/(\w+)/.*`)
+			result := reg.FindStringSubmatch(link)
+			if len(result) == 2 {
+				return result[1]
 			}
 		}
 	}

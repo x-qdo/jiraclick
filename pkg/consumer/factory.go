@@ -18,7 +18,7 @@ type inputBody struct {
 func MakeAction(
 	key contract.RoutingKey,
 	jira *jira.ConnectorPool,
-	clickup *clickup.ClickUpAPIClient,
+	clickup *clickup.APIClient,
 	publisher *publisher.EventPublisher,
 ) (contract.Action, error) {
 	var (

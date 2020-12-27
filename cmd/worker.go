@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
 	"x-qdo/jiraclick/pkg/consumer"
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/provider"
@@ -11,7 +12,7 @@ import (
 
 func NewWorkerCmd(
 	queue *provider.RabbitChannel,
-	clickup *clickup.ClickUpAPIClient,
+	clickup *clickup.APIClient,
 	jira *jira.ConnectorPool,
 ) *cobra.Command {
 	return &cobra.Command{

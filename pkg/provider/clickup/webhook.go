@@ -42,16 +42,14 @@ type HistoryItem struct {
 	After  interface{} `json:"after"`
 }
 
-func (item *HistoryItem) CovertTo() {
-
-}
-
 func CheckSignature(signature, body, secret string) bool {
 	s := []byte(secret)
 	m := []byte(body)
 
 	hash := hmac.New(sha256.New, s)
-	hash.Write(m)
+	if _, err := hash.Write(m); err != nil {
+		return false
+	}
 
 	// to lowercase hexits
 	result := hex.EncodeToString(hash.Sum(nil))

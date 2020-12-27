@@ -16,12 +16,15 @@ var actionRoutingKeys = [3]contract.RoutingKey{
 
 type ActionsConsumer struct {
 	queueProvider   *provider.RabbitChannel
-	clickupProvider *clickup.ClickUpAPIClient
+	clickupProvider *clickup.APIClient
 	jiraProvider    *jira.ConnectorPool
 }
 
-func NewActionsConsumer(jiraProvider *jira.ConnectorPool, queueProvider *provider.RabbitChannel, clickup *clickup.ClickUpAPIClient) (*ActionsConsumer, error) {
-
+func NewActionsConsumer(
+	jiraProvider *jira.ConnectorPool,
+	queueProvider *provider.RabbitChannel,
+	clickup *clickup.APIClient,
+) (*ActionsConsumer, error) {
 	if err := queueProvider.DefineExchange(contract.BRPActionsExchange, true); err != nil {
 		return nil, err
 	}

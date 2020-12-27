@@ -2,7 +2,9 @@ package publisher
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
+
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
 	"x-qdo/jiraclick/pkg/provider"

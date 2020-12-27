@@ -2,7 +2,9 @@ package jira
 
 import (
 	"fmt"
+
 	"github.com/andygrunwald/go-jira"
+
 	"x-qdo/jiraclick/pkg/config"
 )
 
@@ -16,7 +18,7 @@ func NewJiraConnector(cfg *config.Config) (*ConnectorPool, error) {
 	for tenant, instance := range cfg.Jira {
 		tp := jira.BasicAuthTransport{
 			Username: instance.Username,
-			Password: instance.ApiToken,
+			Password: instance.APIToken,
 		}
 
 		client, err := jira.NewClient(tp.Client(), instance.BaseURL)

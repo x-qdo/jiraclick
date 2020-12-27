@@ -2,9 +2,11 @@ package context
 
 import (
 	"context"
+	"sync"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"sync"
+
 	"x-qdo/jiraclick/cmd"
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/provider"
@@ -60,12 +62,12 @@ func setCommands(
 	ctx *Context,
 	cfg *config.Config,
 	queue *provider.RabbitChannel,
-	clickup *clickup.ClickUpAPIClient,
+	clickup *clickup.APIClient,
 	jira *jira.ConnectorPool,
 	logger *logrus.Logger,
 ) {
 	workerCmd := cmd.NewWorkerCmd(queue, clickup, jira)
-	httpHandlerCmd := cmd.NewHttpHandlerCmd(cfg, logger, queue, clickup)
+	httpHandlerCmd := cmd.NewHTTPHandlerCmd(cfg, logger, queue, clickup)
 
 	rootCmd := cmd.NewRootCmd()
 
