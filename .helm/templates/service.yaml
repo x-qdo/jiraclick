@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jiraclick.fullname" . }}
+  labels:
+    {{- include "jiraclick.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: 80
+      targetPort: http-handler
+      protocol: TCP
+      name: http-handler
+  selector:
+    {{- include "jiraclick.selectorLabels" . | nindent 4 }}
+    role: api

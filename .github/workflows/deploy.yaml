@@ -1,0 +1,118 @@
+name: deploy-to-k8s
+
+on:
+  issue_comment:
+    types: created
+
+jobs:
+  build:
+    name: Build, push, and deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: khan/pull-request-comment-trigger@master
+        id: check
+        with:
+          trigger: '!deploy'
+          reaction: rocket
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Create URL to the run output
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        id: vars
+        run: echo ::set-output name=run-url::https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+      - name: Update comment
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            [Deployment run output][1]
+            [1]: ${{ steps.vars.outputs.run-url }}
+
+      - name: GitHub API Request
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        id: request
+        uses: octokit/request-action@v2.0.0
+        with:
+          route: ${{ github.event.issue.pull_request.url }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Get PR informations
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        id: pr_data
+        run: |
+          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
+          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).base.repo.full_name }}"
+          echo "::set-output name=repo_clone_url::${{ fromJson(steps.request.outputs.data).base.repo.clone_url }}"
+          echo "::set-output name=repo_ssh_url::${{ fromJson(steps.request.outputs.data).base.repo.ssh_url }}"
+
+      - name: Clone branch of PR
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ steps.pr_data.outputs.branch }}
+
+      - name: Install doctl
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DigitalOcean Container Registry with short-lived credentials
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        run: doctl registry login --expiry-seconds 600
+
+      - name: Sops Binary Installer
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        uses: mdgreenwald/mozilla-sops-action@v1
+
+      - uses: azure/setup-helm@v1
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        with:
+          version: 'v3.2.4'
+
+      - name: Install helm secrets plugin
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        run: helm plugin install https://github.com/zendesk/helm-secrets
+
+      - name: Build container image
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        run: docker build -t registry.digitalocean.com/qdo/jiraclick:$(echo $GITHUB_SHA | head -c7) .
+
+      - name: Push image to DigitalOcean Container Registry
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        run: docker push registry.digitalocean.com/qdo/jiraclick
+
+      - name: Save DigitalOcean kubeconfig
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        run: doctl kubernetes cluster kubeconfig save c046ec33-b333-49e9-be05-5b84ab1dd7a7
+
+      - name: AWS Credentials
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Deploy release
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        run: helm secrets upgrade jiraclick ./.helm/ --install --wait --atomic -f .helm/values.yaml -f .helm/secrets.yaml --set=image.tag="$(echo $GITHUB_SHA | head -c7)"
+
+      - name: Add reactions to mark deployment as sucessfull
+        if: ${{ steps.check.outputs.triggered == 'true' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: hooray
+
+      - name: Add reactions to mark deployment as failde
+        if: ${{ failure() && steps.check.outputs.triggered == 'true' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: "-1"
