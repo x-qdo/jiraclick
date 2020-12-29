@@ -15,7 +15,12 @@ clickup:
   list: "10942379"
   host: "https://api.clickup.com/api/v2"
 jira:
-  GQCCU8SCW:
+  CQYUVTWH2:
+    username: ""
+    apitoken: ""
+    baseurl: "https://iiziservices.atlassian.net"
+    project: "DOPS"
+  CQTG74FUH:
     username: ""
     apitoken: ""
     baseurl: "https://iiziservices.atlassian.net"
