@@ -48,6 +48,8 @@ jira:
     baseurl: "https://iiziservices.atlassian.net"
     project: "DOPS"
 
+debug: true
+
 rabbitmq:
   url: ""
 
