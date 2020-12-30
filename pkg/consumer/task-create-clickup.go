@@ -66,7 +66,7 @@ func (a *TaskCreateClickupAction) generateTaskRequest(payload *model.TaskPayload
 	request.Description = payload.Description + "\n" + payload.AC
 	request.AddCustomField(clickup.RequestedBy, payload.SlackReporter)
 	request.AddCustomField(clickup.SlackLink, payload.Details["slack"])
-	request.AddCustomField(clickup.Synced, true)
+	request.AddCustomField(clickup.Synced, false)
 
 	if payload.Type == model.IncidentTaskType {
 		request.Name = "[IN] " + request.Name
