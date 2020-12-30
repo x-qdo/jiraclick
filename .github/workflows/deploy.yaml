@@ -40,21 +40,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Get PR informations
+      - name: Get PR information
         if: ${{ steps.check.outputs.triggered == 'true' }}
         id: pr_data
         run: |
-          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
-          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).base.repo.full_name }}"
+          echo "::set-output name=sha::${{ fromJson(steps.request.outputs.data).head.sha }}"
+          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).base.repo.name }}"
           echo "::set-output name=repo_clone_url::${{ fromJson(steps.request.outputs.data).base.repo.clone_url }}"
           echo "::set-output name=repo_ssh_url::${{ fromJson(steps.request.outputs.data).base.repo.ssh_url }}"
+
+      - name: Print info
+        run: |
+          echo "SHA: ${{ steps.pr_data.outputs.sha }}"
+          echo "SHA: $(echo ${{ steps.pr_data.outputs.sha }} | head -c7)"
+          echo "repo_name: ${{ steps.pr_data.outputs.repo_name }}"
 
       - name: Clone branch of PR
         if: ${{ steps.check.outputs.triggered == 'true' }}
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ steps.pr_data.outputs.branch }}
+          ref: ${{ steps.pr_data.outputs.sha }}
 
       - name: Install doctl
         if: ${{ steps.check.outputs.triggered == 'true' }}
@@ -73,7 +79,7 @@ jobs:
       - uses: azure/setup-helm@v1
         if: ${{ steps.check.outputs.triggered == 'true' }}
         with:
-          version: 'v3.2.4'
+          version: 'v3.4.2'
 
       - name: Install helm secrets plugin
         if: ${{ steps.check.outputs.triggered == 'true' }}
@@ -81,11 +87,11 @@ jobs:
 
       - name: Build container image
         if: ${{ steps.check.outputs.triggered == 'true' }}
-        run: docker build -t registry.digitalocean.com/qdo/jiraclick:$(echo $GITHUB_SHA | head -c7) .
+        run: docker build -t registry.digitalocean.com/qdo/${{ steps.pr_data.outputs.repo_name }}:$(echo ${{ steps.pr_data.outputs.sha }} | head -c7) .
 
       - name: Push image to DigitalOcean Container Registry
         if: ${{ steps.check.outputs.triggered == 'true' }}
-        run: docker push registry.digitalocean.com/qdo/jiraclick
+        run: docker push registry.digitalocean.com/qdo/${{ steps.pr_data.outputs.repo_name }}
 
       - name: Save DigitalOcean kubeconfig
         if: ${{ steps.check.outputs.triggered == 'true' }}
@@ -101,7 +107,13 @@ jobs:
 
       - name: Deploy release
         if: ${{ steps.check.outputs.triggered == 'true' }}
-        run: helm secrets upgrade jiraclick ./.helm/ --install --wait --atomic -f .helm/values.yaml -f .helm/secrets.yaml --set=image.tag="$(echo $GITHUB_SHA | head -c7)"
+        run: |
+          helm secrets upgrade ${{ steps.pr_data.outputs.repo_name }} \
+          ./.helm/ --install --wait --atomic \
+          -f .helm/values.yaml \
+          -f .helm/secrets.yaml \
+          --set=image.tag="$(echo ${{ steps.pr_data.outputs.sha }} | head -c7)" \
+          --set=goapp.image.tag="$(echo ${{ steps.pr_data.outputs.sha }} | head -c7)"
 
       - name: Add reactions to mark deployment as sucessfull
         if: ${{ steps.check.outputs.triggered == 'true' }}
