@@ -74,4 +74,26 @@ Create the name of the service account to use
   value: "/"
 - name: HTTPHANDLER_PORT
   value: "8080"
+- name: CLICKUP_TOKEN
+  valueFrom:
+    secretKeyRef:
+      key: clickup_token
+      name: {{ include "jiraclick.fullname" . }}
+- name: CLICKUP_WEBHOOKSECRET
+  valueFrom:
+    secretKeyRef:
+      key: clickup_webhooksecret
+      name: {{ include "jiraclick.fullname" . }}
+{{- range $key, $value := .Values.jira }}
+- name: JIRA_{{$key}}_USERNAME
+  valueFrom:
+    secretKeyRef:
+      key: jira_{{$key}}_username
+      name: {{ include "jiraclick.fullname" . }}
+- name: JIRA_{{$key}}_APITOKEN
+  valueFrom:
+    secretKeyRef:
+      key: jira_{{$key}}_apitoken
+      name: {{ include "jiraclick.fullname" . }}
+{{- end }}
 {{- end -}}
