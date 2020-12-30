@@ -39,7 +39,7 @@ service:
 clickup:
   webhooksecret: ""
   token: ""
-  list: "10942379"
+  list: "10940440"
   host: "https://api.clickup.com/api/v2"
 jira:
   GQCCU8SCW:
