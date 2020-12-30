@@ -41,8 +41,6 @@ config_content: ""
 clickup:
   webhooksecret: ""
   token: ""
-  list: "10940440"
-  host: "https://api.clickup.com/api/v2"
 jira:
   GQCCU8SCW:
     username: "andrei.tratsiakou@insly.com"
