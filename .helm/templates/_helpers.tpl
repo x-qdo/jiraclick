@@ -98,3 +98,18 @@ Create the name of the service account to use
       name: {{ $name }}
 {{- end }}
 {{- end -}}
+
+{{- define "jiraclick.config_mount" -}}
+- mountPath: "/etc/jiraclick/"
+  name: config
+  readOnly: true
+{{- end -}}
+
+{{- define "jiraclick.config_volume" -}}
+- name: config
+  secret:
+    secretName: {{ include "jiraclick.fullname" . }}
+    items:
+    - key: config_content
+      path: config.yaml
+{{- end -}}

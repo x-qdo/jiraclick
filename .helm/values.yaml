@@ -36,6 +36,8 @@ securityContext: {}
 service:
   type: ClusterIP
 
+config_content: ""
+
 clickup:
   webhooksecret: ""
   token: ""
