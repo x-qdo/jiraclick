@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net/http"
+	"net/http/httputil"
 
 	"x-qdo/jiraclick/pkg/config"
 )
@@ -46,6 +48,8 @@ func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
+	logrus.Debug("Sending POST request to Clickup: ", c.options.host+"/list/"+c.options.listID+"/task/")
+	logrus.Debug(body)
 	req, err := http.NewRequest("POST", c.options.host+"/list/"+c.options.listID+"/task/", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
@@ -59,7 +63,7 @@ func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
 	}
 
 	if r.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ClickUp API error: %s", r.Status)
+		return nil, formatHttpError(r)
 	}
 	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(&task)
@@ -75,6 +79,8 @@ func (c *APIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) er
 	if err != nil {
 		return err
 	}
+	logrus.Debug("Sending PUT request to Clickup: ", c.options.host+"/task/"+taskID)
+	logrus.Debug(body)
 	req, err := http.NewRequest("PUT", c.options.host+"/task/"+taskID, bytes.NewBuffer(body))
 	if err != nil {
 		return err
@@ -88,7 +94,7 @@ func (c *APIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) er
 	}
 
 	if r.StatusCode != http.StatusOK {
-		return fmt.Errorf("ClickUp API error: %s", r.Status)
+		return formatHttpError(r)
 	}
 	defer r.Body.Close()
 
@@ -112,6 +118,9 @@ func (c *APIClient) SetCustomField(taskID, customFieldID string, value interface
 	if err != nil {
 		return err
 	}
+
+	logrus.Debug("Sending POST request to Clickup: ", c.options.host+"/task/"+taskID+"/field/"+customFieldID)
+	logrus.Debug(body)
 	req, err := http.NewRequest("POST", c.options.host+"/task/"+taskID+"/field/"+customFieldID, bytes.NewBuffer(body))
 	if err != nil {
 		return err
@@ -125,7 +134,7 @@ func (c *APIClient) SetCustomField(taskID, customFieldID string, value interface
 	}
 
 	if r.StatusCode != http.StatusOK {
-		return fmt.Errorf("ClickUp API error: %s", r.Status)
+		return formatHttpError(r)
 	}
 	defer r.Body.Close()
 
@@ -134,6 +143,7 @@ func (c *APIClient) SetCustomField(taskID, customFieldID string, value interface
 
 func (c *APIClient) GetTask(taskID string) (*Task, error) {
 	var task Task
+	logrus.Debug("Sending GET request to Clickup: ", c.options.host+"/task/"+taskID)
 	req, err := http.NewRequest("GET", c.options.host+"/task/"+taskID, nil)
 	if err != nil {
 		return nil, err
@@ -147,7 +157,7 @@ func (c *APIClient) GetTask(taskID string) (*Task, error) {
 	}
 
 	if r.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ClickUp API error: %s", r.Status)
+		return nil, formatHttpError(r)
 	}
 	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(&task)
@@ -156,4 +166,9 @@ func (c *APIClient) GetTask(taskID string) (*Task, error) {
 	}
 
 	return &task, nil
+}
+
+func formatHttpError(r *http.Response) error {
+	dump, _ := httputil.DumpResponse(r, true)
+	return fmt.Errorf("ClickUp API error status: %s body: %q", r.Status, dump)
 }
