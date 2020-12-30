@@ -49,7 +49,7 @@ func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
 		return nil, err
 	}
 	logrus.Debug("Sending POST request to Clickup: ", c.options.host+"/list/"+c.options.listID+"/task/")
-	logrus.Debug(body)
+	logrus.Debug(string(body))
 	req, err := http.NewRequest("POST", c.options.host+"/list/"+c.options.listID+"/task/", bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (c *APIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) er
 		return err
 	}
 	logrus.Debug("Sending PUT request to Clickup: ", c.options.host+"/task/"+taskID)
-	logrus.Debug(body)
+	logrus.Debug(string(body))
 	req, err := http.NewRequest("PUT", c.options.host+"/task/"+taskID, bytes.NewBuffer(body))
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func (c *APIClient) SetCustomField(taskID, customFieldID string, value interface
 	}
 
 	logrus.Debug("Sending POST request to Clickup: ", c.options.host+"/task/"+taskID+"/field/"+customFieldID)
-	logrus.Debug(body)
+	logrus.Debug(string(body))
 	req, err := http.NewRequest("POST", c.options.host+"/task/"+taskID+"/field/"+customFieldID, bytes.NewBuffer(body))
 	if err != nil {
 		return err
