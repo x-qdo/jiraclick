@@ -17,7 +17,8 @@ const (
 type TaskStatus string
 
 const (
-	InProgress TaskStatus = "in progress"
+	InitialStatus TaskStatus = "planned"
+	InProgress    TaskStatus = "in progress"
 )
 
 type Task struct {

@@ -40,6 +40,8 @@ spec:
             - name: http-handler
               containerPort: 8080
               protocol: TCP
+          volumeMounts:
+            {{ include "jiraclick.config_mount" . | nindent 12 }}
           livenessProbe:
             httpGet:
               path: /health-check
@@ -50,6 +52,8 @@ spec:
               port: http-handler
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{ include "jiraclick.config_volume" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

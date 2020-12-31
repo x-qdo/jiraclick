@@ -36,11 +36,11 @@ securityContext: {}
 service:
   type: ClusterIP
 
+config_content: ""
+
 clickup:
   webhooksecret: ""
   token: ""
-  list: "10942379"
-  host: "https://api.clickup.com/api/v2"
 jira:
   GQCCU8SCW:
     username: "andrei.tratsiakou@insly.com"

@@ -56,7 +56,9 @@ func (h *clickUpWebhooks) TaskEvent(ctx *gin.Context) {
 		return
 	}
 
+	h.logger.Debug("Clickup Raw Event: ", body)
 	event, err := clickup.ParseEvent(body)
+	h.logger.Debug("Clickup Parsed Event: ", event)
 	if err != nil {
 		h.logger.Error(errors.Wrap(err, "ClickUp webhook: body can't be parsed"))
 		ctx.Status(http.StatusInternalServerError)

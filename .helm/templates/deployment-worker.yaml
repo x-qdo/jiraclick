@@ -34,8 +34,12 @@ spec:
             - worker
           env:
             {{ include "jiraclick.common_env" . | nindent 12 }}
+          volumeMounts:
+            {{ include "jiraclick.config_mount" . | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{ include "jiraclick.config_volume" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

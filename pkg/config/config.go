@@ -39,7 +39,11 @@ type JiraInstance struct {
 func NewConfig(path string) (*Config, error) {
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
+	viper.AddConfigPath("/etc/jiraclick/")
 	viper.AddConfigPath(path)
+	if err := viper.BindEnv("debug"); err != nil {
+		return nil, err
+	}
 	if err := viper.BindEnv("rabbitmq.url"); err != nil {
 		return nil, err
 	}

@@ -63,15 +63,53 @@ Create the name of the service account to use
 {{- end -}}
 
 {{- define "jiraclick.common_env" -}}
+{{- $name := include "jiraclick.fullname" . -}}
 - name: DEBUG
   value: "true"
 - name: RABBITMQ_URL
   valueFrom:
     secretKeyRef:
       key: rabbitmq_url
-      name: {{ include "jiraclick.fullname" . }}
+      name: {{ $name }}
 - name: CONFIG_PATH
   value: "/"
 - name: HTTPHANDLER_PORT
   value: "8080"
+- name: CLICKUP_TOKEN
+  valueFrom:
+    secretKeyRef:
+      key: clickup_token
+      name: {{ $name }}
+- name: CLICKUP_WEBHOOKSECRET
+  valueFrom:
+    secretKeyRef:
+      key: clickup_webhooksecret
+      name: {{ $name }}
+{{- range $key, $value := .Values.jira }}
+- name: JIRA_{{$key}}_USERNAME
+  valueFrom:
+    secretKeyRef:
+      key: jira_{{$key}}_username
+      name: {{ $name }}
+- name: JIRA_{{$key}}_APITOKEN
+  valueFrom:
+    secretKeyRef:
+      key: jira_{{$key}}_apitoken
+      name: {{ $name }}
+{{- end }}
+{{- end -}}
+
+{{- define "jiraclick.config_mount" -}}
+- mountPath: "/etc/jiraclick/"
+  name: config
+  readOnly: true
+{{- end -}}
+
+{{- define "jiraclick.config_volume" -}}
+- name: config
+  secret:
+    secretName: {{ include "jiraclick.fullname" . }}
+    items:
+    - key: config_content
+      path: config.yaml
 {{- end -}}

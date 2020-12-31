@@ -34,6 +34,7 @@ func NewContext(configPath string) (*Context, error) {
 	logger := logrus.New()
 	if cfg.Debug {
 		logger.SetLevel(logrus.DebugLevel)
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	ctx.WaitGroup = new(sync.WaitGroup)
