@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"encoding/json"
+	"github.com/araddon/dateparse"
 
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
@@ -73,6 +74,13 @@ func (a *TaskCreateClickupAction) generateTaskRequest(payload *model.TaskPayload
 		payload.Title = request.Name
 		request.Tags = make([]string, 0)
 		request.Tags = append(request.Tags, string(payload.Type))
+	}
+
+	if payload.DueDate != "" {
+		if time, err := dateparse.ParseAny(payload.DueDate); err == nil {
+			timestamp := time.UnixNano() / 1e6
+			request.DueDate = &timestamp
+		}
 	}
 
 	return request
