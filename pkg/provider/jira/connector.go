@@ -2,6 +2,7 @@ package jira
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/andygrunwald/go-jira"
 
@@ -16,6 +17,7 @@ func NewJiraConnector(cfg *config.Config) (*ConnectorPool, error) {
 	clients := make(map[string]ClientInterface)
 
 	for tenant, instance := range cfg.Jira {
+		tenant = strings.ToLower(tenant)
 		tp := jira.BasicAuthTransport{
 			Username: instance.Username,
 			Password: instance.APIToken,
@@ -39,7 +41,8 @@ func NewJiraConnector(cfg *config.Config) (*ConnectorPool, error) {
 }
 
 func (pool *ConnectorPool) GetInstance(tenant string) ClientInterface {
-	if _, ok := pool.clients[tenant]; ok {
+	tenant = strings.ToLower(tenant)
+	if _, ok := pool.clients[tenant]; !ok {
 		panic(fmt.Sprintf("tenant %s must be declared in config.yaml file", tenant))
 	}
 	return pool.clients[tenant]

@@ -119,6 +119,10 @@ func generateTaskChangesByEvent(event *clickup.WebhookEvent) model.TaskChanges {
 			if after, ok := historyItem.After.(map[string]interface{}); ok {
 				value = after["status"]
 			}
+		case clickup.TaskPriorityUpdated:
+			if after, ok := historyItem.After.(map[string]interface{}); ok {
+				value = after["priority"]
+			}
 		}
 		changes.AddChange(historyItem.Field, value)
 		changes.Username = historyItem.User.Username
