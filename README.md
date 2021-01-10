@@ -1,2 +1,2 @@
 # jira-rabbitmq-clickup
-Jira &amp; ClickUp integration using RabbitMQ
+Jira &amp; ClickUp integration using Business Rule Processor (RabbitMQ)
