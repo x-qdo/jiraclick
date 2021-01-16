@@ -44,7 +44,7 @@ func NewContext(configPath string) (*Context, error) {
 		panic(err)
 	}
 
-	clickupProvider, err := clickup.NewClickUpClient(cfg)
+	clickupProvider, err := clickup.NewClickUpConnector(cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -63,7 +63,7 @@ func setCommands(
 	ctx *Context,
 	cfg *config.Config,
 	queue *provider.RabbitChannel,
-	clickup *clickup.APIClient,
+	clickup *clickup.ConnectorPool,
 	jira *jira.ConnectorPool,
 	logger *logrus.Logger,
 ) {

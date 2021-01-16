@@ -8,14 +8,9 @@ import (
 )
 
 type Config struct {
-	Debug   bool `yaml:"debug"`
-	ClickUp struct {
-		Host          string `yaml:"host"`
-		Token         string `yaml:"token"`
-		List          string `yaml:"list"`
-		WebhookSecret string `yaml:"webhooksecret"`
-	} `yaml:"clickup"`
-	Jira     map[string]JiraInstance `yaml:"jira"`
+	Debug    bool                       `yaml:"debug"`
+	ClickUp  map[string]ClickUpInstance `yaml:"clickup"`
+	Jira     map[string]JiraInstance    `yaml:"jira"`
 	RabbitMQ struct {
 		URL      string `yaml:"url"`
 		Host     string `yaml:"host"`
@@ -34,6 +29,13 @@ type JiraInstance struct {
 	APIToken string `yaml:"apitoken"`
 	BaseURL  string `yaml:"baseurl"`
 	Project  string `yaml:"project"`
+}
+
+type ClickUpInstance struct {
+	Host          string `yaml:"host"`
+	Token         string `yaml:"token"`
+	List          string `yaml:"list"`
+	WebhookSecret string `yaml:"webhooksecret"`
 }
 
 func NewConfig(path string) (*Config, error) {
