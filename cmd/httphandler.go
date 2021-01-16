@@ -15,7 +15,7 @@ func NewHTTPHandlerCmd(
 	cfg *config.Config,
 	logger *logrus.Logger,
 	queue *provider.RabbitChannel,
-	clickup *clickup.APIClient,
+	clickup *clickup.ConnectorPool,
 ) *cobra.Command {
 	return &cobra.Command{
 		Use:   "http-handler",

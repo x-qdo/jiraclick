@@ -7,8 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httputil"
-
-	"x-qdo/jiraclick/pkg/config"
 )
 
 type APIClient struct {
@@ -18,6 +16,13 @@ type APIClient struct {
 		token  string
 		listID string
 	}
+}
+
+type ClientInterface interface {
+	CreateTask(request *PutClickUpTaskRequest) (*Task, error)
+	UpdateTask(taskID string, request *PutClickUpTaskRequest) error
+	SetCustomField(taskID, customFieldID string, value interface{}) error
+	GetTask(taskID string) (*Task, error)
 }
 
 type PutClickUpTaskRequest struct {
@@ -34,14 +39,14 @@ func (t *PutClickUpTaskRequest) AddCustomField(id CustomFieldKey, value interfac
 	t.CustomFields = append(t.CustomFields, CustomField{ID: id, Value: value})
 }
 
-func NewClickUpClient(cfg *config.Config) (*APIClient, error) {
-	client := new(APIClient)
-	client.options.host = cfg.ClickUp.Host
-	client.options.token = cfg.ClickUp.Token
-	client.options.listID = cfg.ClickUp.List
-
-	return client, nil
-}
+//func NewClickUpClient(cfg *config.Config) (*APIClient, error) {
+//	client := new(APIClient)
+//	client.options.host = cfg.ClickUp.Host
+//	client.options.token = cfg.ClickUp.Token
+//	client.options.listID = cfg.ClickUp.List
+//
+//	return client, nil
+//}
 
 func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
 	var task Task

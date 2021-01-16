@@ -13,11 +13,11 @@ import (
 )
 
 type TaskUpdateClickupAction struct {
-	client    *clickup.APIClient
+	client    *clickup.ConnectorPool
 	publisher *publisher.EventPublisher
 }
 
-func NewTaskUpdateClickupAction(clickup *clickup.APIClient, p *publisher.EventPublisher) (contract.Action, error) {
+func NewTaskUpdateClickupAction(clickup *clickup.ConnectorPool, p *publisher.EventPublisher) (contract.Action, error) {
 	return &TaskUpdateClickupAction{
 		client:    clickup,
 		publisher: p,
@@ -45,7 +45,7 @@ func (a *TaskUpdateClickupAction) ProcessAction(delivery amqp.Delivery) error {
 		return errors.Wrap(err, "Can't create task request")
 	}
 
-	err = a.client.UpdateTask(payload.ClickupID, request)
+	err = a.client.GetInstance(payload.SlackChannel).UpdateTask(payload.ClickupID, request)
 	if err != nil {
 		return errors.Wrap(err, "Can't update a task in ClickUp")
 	}

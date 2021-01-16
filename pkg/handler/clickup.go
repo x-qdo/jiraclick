@@ -20,14 +20,14 @@ type clickUpWebhooks struct {
 	cfg       *config.Config
 	logger    *logrus.Logger
 	publisher *publisher.EventPublisher
-	clickup   *clickup.APIClient
+	clickup   *clickup.ConnectorPool
 }
 
 func NewClickUpWebhooksHandler(
 	cfg *config.Config,
 	logger *logrus.Logger,
 	queue *provider.RabbitChannel,
-	clickup *clickup.APIClient,
+	clickup *clickup.ConnectorPool,
 ) (*clickUpWebhooks, error) {
 	p, err := publisher.NewEventPublisher(queue)
 	if err != nil {
@@ -50,7 +50,8 @@ func (h *clickUpWebhooks) TaskEvent(ctx *gin.Context) {
 	}
 
 	body := buf.String()
-	if !clickup.CheckSignature(ctx.Request.Header.Get("X-Signature"), body, h.cfg.ClickUp.WebhookSecret) {
+	accessed, tenant := h.checkWebhookSecret(ctx, body)
+	if !accessed {
 		h.logger.Error("ClickUp webhook: signature is not valid")
 		ctx.Status(http.StatusForbidden)
 		return
@@ -69,7 +70,7 @@ func (h *clickUpWebhooks) TaskEvent(ctx *gin.Context) {
 		return
 	}
 
-	err = h.doAction(event)
+	err = h.doAction(event, tenant)
 	if err != nil {
 		h.logger.Error(err)
 		ctx.Status(http.StatusInternalServerError)
@@ -79,10 +80,10 @@ func (h *clickUpWebhooks) TaskEvent(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (h *clickUpWebhooks) doAction(event *clickup.WebhookEvent) error {
+func (h *clickUpWebhooks) doAction(event *clickup.WebhookEvent, tenant string) error {
 	var changes model.TaskChanges
 
-	task, err := h.clickup.GetTask(event.TaskID)
+	task, err := h.clickup.GetInstance(tenant).GetTask(event.TaskID)
 	if err != nil {
 		return errors.Wrap(err, "ClickUp webhook: can't get task")
 	}
@@ -148,4 +149,13 @@ func isEventActual(taskDate, eventDate string) bool {
 	}
 
 	return taskTimestamp <= eventTimestamp
+}
+
+func (h *clickUpWebhooks) checkWebhookSecret(ctx *gin.Context, body string) (bool, string) {
+	for tenant, clickUpCfg := range h.cfg.ClickUp {
+		if clickup.CheckSignature(ctx.Request.Header.Get("X-Signature"), body, clickUpCfg.WebhookSecret) {
+			return true, tenant
+		}
+	}
+	return false, ""
 }

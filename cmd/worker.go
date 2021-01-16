@@ -12,7 +12,7 @@ import (
 
 func NewWorkerCmd(
 	queue *provider.RabbitChannel,
-	clickup *clickup.APIClient,
+	clickup *clickup.ConnectorPool,
 	jira *jira.ConnectorPool,
 ) *cobra.Command {
 	return &cobra.Command{
