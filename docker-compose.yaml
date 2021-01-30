@@ -1,0 +1,20 @@
+version: '3.7'
+
+services:
+
+  postgres:
+    image: postgres:12.4-alpine
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_DB=jiraclick
+    volumes:
+      - postgres-jiraclick-db:/var/lib/postgresql/data:cached
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}"
+    expose:
+      - "${POSTGRES_PORT}"
+    command: -p ${POSTGRES_PORT}
+
+volumes:
+  postgres-jiraclick-db:

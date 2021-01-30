@@ -11,11 +11,7 @@ import (
 )
 
 func main() {
-	var configPath = "."
-	if path := os.Getenv("CONFIG_PATH"); path != "" {
-		configPath = path
-	}
-	ctx, err := appcontext.NewContext(configPath)
+	ctx, err := appcontext.NewContext()
 	if err != nil {
 		panic(fmt.Errorf("context has thrown an error: %w", err))
 	}

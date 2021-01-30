@@ -9,25 +9,3 @@ httphandler:
   port: 8080
 metrics:
   port: 9090
-clickup:
-  CQYUVTWH2:
-    webhooksecret: ""
-    token: "pk_"
-    list: "10942379"
-    host: "https://api.clickup.com/api/v2"
-  CQTG74FUH:
-    webhooksecret: ""
-    token: "pk_"
-    list: "10942379"
-    host: "https://api.clickup.com/api/v2"
-jira:
-  CQYUVTWH2:
-    username: ""
-    apitoken: ""
-    baseurl: "https://iiziservices.atlassian.net"
-    project: "DOPS"
-  CQTG74FUH:
-    username: ""
-    apitoken: ""
-    baseurl: "https://iiziservices.atlassian.net"
-    project: "DOPS"

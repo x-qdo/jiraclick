@@ -71,47 +71,15 @@ Create the name of the service account to use
     secretKeyRef:
       key: rabbitmq_url
       name: {{ $name }}
+- name: POSTGRES_URL
+  valueFrom:
+    secretKeyRef:
+      key: postgres_url
+      name: {{ $name }}
+- name: POSTGRES_INSECURE
+  value: "true"
 - name: CONFIG_PATH
   value: "/"
 - name: HTTPHANDLER_PORT
   value: "8080"
-{{- range $key, $value := .Values.clickup }}
-- name: CLICKUP_{{$key}}_TOKEN
-  valueFrom:
-    secretKeyRef:
-      key: clickup_{{$key}}_token
-      name: {{ $name }}
-- name: CLICKUP_{{$key}}_WEBHOOKSECRET
-  valueFrom:
-    secretKeyRef:
-      key: clickup_{{$key}}_webhooksecret
-      name: {{ $name }}
-{{- end }}
-{{- range $key, $value := .Values.jira }}
-- name: JIRA_{{$key}}_USERNAME
-  valueFrom:
-    secretKeyRef:
-      key: jira_{{$key}}_username
-      name: {{ $name }}
-- name: JIRA_{{$key}}_APITOKEN
-  valueFrom:
-    secretKeyRef:
-      key: jira_{{$key}}_apitoken
-      name: {{ $name }}
-{{- end }}
-{{- end -}}
-
-{{- define "jiraclick.config_mount" -}}
-- mountPath: "/etc/jiraclick/"
-  name: config
-  readOnly: true
-{{- end -}}
-
-{{- define "jiraclick.config_volume" -}}
-- name: config
-  secret:
-    secretName: {{ include "jiraclick.fullname" . }}
-    items:
-    - key: config_content
-      path: config.yaml
 {{- end -}}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"strconv"
+	"x-qdo/jiraclick/pkg/contract"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -21,6 +22,7 @@ type clickUpWebhooks struct {
 	logger    *logrus.Logger
 	publisher *publisher.EventPublisher
 	clickup   *clickup.ConnectorPool
+	db        contract.Storage
 }
 
 func NewClickUpWebhooksHandler(
@@ -28,6 +30,7 @@ func NewClickUpWebhooksHandler(
 	logger *logrus.Logger,
 	queue *provider.RabbitChannel,
 	clickup *clickup.ConnectorPool,
+	db contract.Storage,
 ) (*clickUpWebhooks, error) {
 	p, err := publisher.NewEventPublisher(queue)
 	if err != nil {
@@ -38,6 +41,7 @@ func NewClickUpWebhooksHandler(
 		logger:    logger,
 		publisher: p,
 		clickup:   clickup,
+		db:        db,
 	}, nil
 }
 
@@ -152,8 +156,12 @@ func isEventActual(taskDate, eventDate string) bool {
 }
 
 func (h *clickUpWebhooks) checkWebhookSecret(ctx *gin.Context, body string) (bool, string) {
-	for tenant, clickUpCfg := range h.cfg.ClickUp {
-		if clickup.CheckSignature(ctx.Request.Header.Get("X-Signature"), body, clickUpCfg.WebhookSecret) {
+	clickUpAccounts, err := h.db.GetClickUpAccounts(ctx)
+	if err != nil {
+		panic(err)
+	}
+	for tenant, acc := range clickUpAccounts {
+		if clickup.CheckSignature(ctx.Request.Header.Get("X-Signature"), body, acc.WebhookSecret) {
 			return true, tenant
 		}
 	}

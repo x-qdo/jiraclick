@@ -12,9 +12,10 @@ import (
 type APIClient struct {
 	httpClient http.Client
 	options    struct {
-		host   string
-		token  string
-		listID string
+		host              string
+		token             string
+		listID            string
+		initialTaskStatus string
 	}
 }
 
@@ -23,6 +24,7 @@ type ClientInterface interface {
 	UpdateTask(taskID string, request *PutClickUpTaskRequest) error
 	SetCustomField(taskID, customFieldID string, value interface{}) error
 	GetTask(taskID string) (*Task, error)
+	GetInitialTaskStatus() string
 }
 
 type PutClickUpTaskRequest struct {
@@ -38,15 +40,6 @@ type PutClickUpTaskRequest struct {
 func (t *PutClickUpTaskRequest) AddCustomField(id CustomFieldKey, value interface{}) {
 	t.CustomFields = append(t.CustomFields, CustomField{ID: id, Value: value})
 }
-
-//func NewClickUpClient(cfg *config.Config) (*APIClient, error) {
-//	client := new(APIClient)
-//	client.options.host = cfg.ClickUp.Host
-//	client.options.token = cfg.ClickUp.Token
-//	client.options.listID = cfg.ClickUp.List
-//
-//	return client, nil
-//}
 
 func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
 	var task Task
@@ -172,6 +165,10 @@ func (c *APIClient) GetTask(taskID string) (*Task, error) {
 	}
 
 	return &task, nil
+}
+
+func (c *APIClient) GetInitialTaskStatus() string {
+	return c.options.initialTaskStatus
 }
 
 func formatHttpError(r *http.Response) error {
