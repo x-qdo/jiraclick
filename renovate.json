@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "dependencyDashboard": true,
+  "dependencyDashboardAutoclose": true,
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "gomod dependencies (non-major)",
+      "groupSlug": "gomod-non-major"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions dependencies"
+    }
+  ]
+}
