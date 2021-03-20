@@ -3,6 +3,7 @@ package context
 import (
 	"context"
 	"sync"
+	"x-qdo/jiraclick/pkg/contract"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -22,11 +23,11 @@ type Context struct {
 	WaitGroup *sync.WaitGroup
 }
 
-func NewContext(configPath string) (*Context, error) {
+func NewContext() (*Context, error) {
 	var ctx Context
 	ctx.Ctx, ctx.CancelF = context.WithCancel(context.Background())
 
-	cfg, err := config.NewConfig(configPath)
+	cfg, err := config.NewConfig()
 	if err != nil {
 		panic(err)
 	}
@@ -44,17 +45,30 @@ func NewContext(configPath string) (*Context, error) {
 		panic(err)
 	}
 
-	clickupProvider, err := clickup.NewClickUpConnector(cfg)
+	db, err := provider.NewPostgres(cfg)
 	if err != nil {
 		panic(err)
 	}
 
-	jiraProvider, err := jira.NewJiraConnector(cfg)
+	clickUpAccounts, err := db.GetClickUpAccounts(ctx.Ctx)
+	if err != nil {
+		panic(err)
+	}
+	clickupProvider, err := clickup.NewClickUpConnector(clickUpAccounts)
 	if err != nil {
 		panic(err)
 	}
 
-	setCommands(&ctx, cfg, amqpProvider, clickupProvider, jiraProvider, logger)
+	jiraAccounts, err := db.GetJiraAccounts(ctx.Ctx)
+	if err != nil {
+		panic(err)
+	}
+	jiraProvider, err := jira.NewJiraConnector(jiraAccounts)
+	if err != nil {
+		panic(err)
+	}
+
+	setCommands(&ctx, cfg, amqpProvider, clickupProvider, jiraProvider, logger, db)
 
 	return &ctx, nil
 }
@@ -66,9 +80,10 @@ func setCommands(
 	clickup *clickup.ConnectorPool,
 	jira *jira.ConnectorPool,
 	logger *logrus.Logger,
+	db contract.Storage,
 ) {
 	workerCmd := cmd.NewWorkerCmd(queue, clickup, jira)
-	httpHandlerCmd := cmd.NewHTTPHandlerCmd(cfg, logger, queue, clickup)
+	httpHandlerCmd := cmd.NewHTTPHandlerCmd(cfg, logger, queue, clickup, db)
 
 	rootCmd := cmd.NewRootCmd()
 

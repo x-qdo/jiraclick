@@ -8,9 +8,7 @@ import (
 )
 
 type Config struct {
-	Debug    bool                       `yaml:"debug"`
-	ClickUp  map[string]ClickUpInstance `yaml:"clickup"`
-	Jira     map[string]JiraInstance    `yaml:"jira"`
+	Debug    bool `yaml:"debug"`
 	RabbitMQ struct {
 		URL      string `yaml:"url"`
 		Host     string `yaml:"host"`
@@ -22,27 +20,13 @@ type Config struct {
 	HTTPHandler struct {
 		Port string `yaml:"port"`
 	} `yaml:"httphandler"`
+	Postgres struct {
+		URL      string `yaml:"url"`
+		Insecure bool   `yaml:"insecure"`
+	} `yaml:"postgres"`
 }
 
-type JiraInstance struct {
-	Username string `yaml:"username"`
-	APIToken string `yaml:"apitoken"`
-	BaseURL  string `yaml:"baseurl"`
-	Project  string `yaml:"project"`
-}
-
-type ClickUpInstance struct {
-	Host          string `yaml:"host"`
-	Token         string `yaml:"token"`
-	List          string `yaml:"list"`
-	WebhookSecret string `yaml:"webhooksecret"`
-}
-
-func NewConfig(path string) (*Config, error) {
-	viper.SetConfigType("yaml")
-	viper.SetConfigName("config")
-	viper.AddConfigPath("/etc/jiraclick/")
-	viper.AddConfigPath(path)
+func NewConfig() (*Config, error) {
 	if err := viper.BindEnv("debug"); err != nil {
 		return nil, err
 	}
@@ -52,13 +36,14 @@ func NewConfig(path string) (*Config, error) {
 	if err := viper.BindEnv("httphandler.port"); err != nil {
 		return nil, err
 	}
+	if err := viper.BindEnv("postgres.url"); err != nil {
+		return nil, err
+	}
+	if err := viper.BindEnv("postgres.insecure"); err != nil {
+		return nil, err
+	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// Find and read the config file
-	if err := viper.ReadInConfig(); err != nil {
-		// Handle errors reading the config file
-		return nil, fmt.Errorf("failed to open file: %w", err)
-	}
 	var c *Config
 	if err := viper.Unmarshal(&c); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal yaml: %w", err)

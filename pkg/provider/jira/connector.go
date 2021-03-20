@@ -3,35 +3,34 @@ package jira
 import (
 	"fmt"
 	"strings"
+	"x-qdo/jiraclick/pkg/model"
 
 	"github.com/andygrunwald/go-jira"
-
-	"x-qdo/jiraclick/pkg/config"
 )
 
 type ConnectorPool struct {
 	clients map[string]ClientInterface
 }
 
-func NewJiraConnector(cfg *config.Config) (*ConnectorPool, error) {
+func NewJiraConnector(accounts map[string]model.JiraAccount) (*ConnectorPool, error) {
 	clients := make(map[string]ClientInterface)
 
-	for tenant, instance := range cfg.Jira {
+	for tenant, account := range accounts {
 		tenant = strings.ToLower(tenant)
 		tp := jira.BasicAuthTransport{
-			Username: instance.Username,
-			Password: instance.APIToken,
+			Username: account.Username,
+			Password: account.APIToken,
 		}
 
-		client, err := jira.NewClient(tp.Client(), instance.BaseURL)
+		client, err := jira.NewClient(tp.Client(), account.BaseURL)
 		if err != nil {
 			return nil, err
 		}
 
 		clients[tenant] = &jiraClient{
 			client:  client,
-			project: instance.Project,
-			baseURL: instance.BaseURL,
+			project: account.Project,
+			baseURL: account.BaseURL,
 		}
 	}
 

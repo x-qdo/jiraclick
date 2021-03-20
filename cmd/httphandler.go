@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"x-qdo/jiraclick/pkg/contract"
 
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/handler"
@@ -16,6 +17,7 @@ func NewHTTPHandlerCmd(
 	logger *logrus.Logger,
 	queue *provider.RabbitChannel,
 	clickup *clickup.ConnectorPool,
+	db contract.Storage,
 ) *cobra.Command {
 	return &cobra.Command{
 		Use:   "http-handler",
@@ -28,7 +30,7 @@ func NewHTTPHandlerCmd(
 				gin.SetMode(gin.DebugMode)
 			}
 
-			clickUpHandler, err := handler.NewClickUpWebhooksHandler(cfg, logger, queue, clickup)
+			clickUpHandler, err := handler.NewClickUpWebhooksHandler(cfg, logger, queue, clickup, db)
 			if err != nil {
 				panic(err)
 			}

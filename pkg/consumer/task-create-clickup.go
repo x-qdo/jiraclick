@@ -63,7 +63,7 @@ func (a *TaskCreateClickupAction) generateTaskRequest(payload *model.TaskPayload
 
 	request.Name = payload.Title
 	request.NotifyAll = false
-	request.Status = string(clickup.InitialStatus)
+	request.Status = a.client.GetInstance(payload.SlackChannel).GetInitialTaskStatus()
 	request.Description = payload.Description + "\n" + payload.AC
 	request.AddCustomField(clickup.RequestedBy, payload.SlackReporter)
 	request.AddCustomField(clickup.SlackLink, payload.Details["slack"])

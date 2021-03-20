@@ -16,11 +16,6 @@ const (
 
 type TaskStatus string
 
-const (
-	InitialStatus TaskStatus = "planned"
-	InProgress    TaskStatus = "in progress"
-)
-
 type Task struct {
 	ID           string        `json:"id"`
 	CustomID     string        `json:"custom_id,omitempty"`
