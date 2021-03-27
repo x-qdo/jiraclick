@@ -2,6 +2,7 @@ package context
 
 import (
 	"context"
+	"github.com/astreter/amqpwrapper"
 	"sync"
 	"x-qdo/jiraclick/pkg/contract"
 
@@ -40,7 +41,10 @@ func NewContext() (*Context, error) {
 
 	ctx.WaitGroup = new(sync.WaitGroup)
 
-	amqpProvider, err := provider.NewRabbitChannel(ctx.Ctx, ctx.WaitGroup, cfg, logger)
+	amqpProvider, err := amqpwrapper.NewRabbitChannel(ctx.Ctx, ctx.CancelF, ctx.WaitGroup, &amqpwrapper.Config{
+		URL:   cfg.RabbitMQ.URL,
+		Debug: cfg.Debug,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -76,7 +80,7 @@ func NewContext() (*Context, error) {
 func setCommands(
 	ctx *Context,
 	cfg *config.Config,
-	queue *provider.RabbitChannel,
+	queue *amqpwrapper.RabbitChannel,
 	clickup *clickup.ConnectorPool,
 	jira *jira.ConnectorPool,
 	logger *logrus.Logger,

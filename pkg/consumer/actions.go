@@ -1,8 +1,8 @@
 package consumer
 
 import (
+	"github.com/astreter/amqpwrapper"
 	"x-qdo/jiraclick/pkg/contract"
-	"x-qdo/jiraclick/pkg/provider"
 	"x-qdo/jiraclick/pkg/provider/clickup"
 	"x-qdo/jiraclick/pkg/provider/jira"
 	"x-qdo/jiraclick/pkg/publisher"
@@ -15,14 +15,14 @@ var actionRoutingKeys = [3]contract.RoutingKey{
 }
 
 type ActionsConsumer struct {
-	queueProvider   *provider.RabbitChannel
+	queueProvider   *amqpwrapper.RabbitChannel
 	clickupProvider *clickup.ConnectorPool
 	jiraProvider    *jira.ConnectorPool
 }
 
 func NewActionsConsumer(
 	jiraProvider *jira.ConnectorPool,
-	queueProvider *provider.RabbitChannel,
+	queueProvider *amqpwrapper.RabbitChannel,
 	clickup *clickup.ConnectorPool,
 ) (*ActionsConsumer, error) {
 	if err := queueProvider.DefineExchange(contract.BRPActionsExchange, true); err != nil {

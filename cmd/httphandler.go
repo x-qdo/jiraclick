@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/astreter/amqpwrapper"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -8,14 +9,13 @@ import (
 
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/handler"
-	"x-qdo/jiraclick/pkg/provider"
 	"x-qdo/jiraclick/pkg/provider/clickup"
 )
 
 func NewHTTPHandlerCmd(
 	cfg *config.Config,
 	logger *logrus.Logger,
-	queue *provider.RabbitChannel,
+	queue *amqpwrapper.RabbitChannel,
 	clickup *clickup.ConnectorPool,
 	db contract.Storage,
 ) *cobra.Command {

@@ -1,17 +1,17 @@
 package cmd
 
 import (
+	"github.com/astreter/amqpwrapper"
 	"github.com/spf13/cobra"
 
 	"x-qdo/jiraclick/pkg/consumer"
 	"x-qdo/jiraclick/pkg/contract"
-	"x-qdo/jiraclick/pkg/provider"
 	"x-qdo/jiraclick/pkg/provider/clickup"
 	"x-qdo/jiraclick/pkg/provider/jira"
 )
 
 func NewWorkerCmd(
-	queue *provider.RabbitChannel,
+	queue *amqpwrapper.RabbitChannel,
 	clickup *clickup.ConnectorPool,
 	jira *jira.ConnectorPool,
 ) *cobra.Command {
