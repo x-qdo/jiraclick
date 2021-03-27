@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"github.com/astreter/amqpwrapper"
 	"net/http"
 	"strconv"
 	"x-qdo/jiraclick/pkg/contract"
@@ -12,7 +13,6 @@ import (
 
 	"x-qdo/jiraclick/pkg/config"
 	"x-qdo/jiraclick/pkg/model"
-	"x-qdo/jiraclick/pkg/provider"
 	"x-qdo/jiraclick/pkg/provider/clickup"
 	"x-qdo/jiraclick/pkg/publisher"
 )
@@ -28,7 +28,7 @@ type clickUpWebhooks struct {
 func NewClickUpWebhooksHandler(
 	cfg *config.Config,
 	logger *logrus.Logger,
-	queue *provider.RabbitChannel,
+	queue *amqpwrapper.RabbitChannel,
 	clickup *clickup.ConnectorPool,
 	db contract.Storage,
 ) (*clickUpWebhooks, error) {

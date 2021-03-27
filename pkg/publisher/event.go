@@ -2,19 +2,19 @@ package publisher
 
 import (
 	"fmt"
+	"github.com/astreter/amqpwrapper"
 
 	"github.com/pkg/errors"
 
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
-	"x-qdo/jiraclick/pkg/provider"
 )
 
 type EventPublisher struct {
-	queueProvider *provider.RabbitChannel
+	queueProvider *amqpwrapper.RabbitChannel
 }
 
-func NewEventPublisher(queueProvider *provider.RabbitChannel) (*EventPublisher, error) {
+func NewEventPublisher(queueProvider *amqpwrapper.RabbitChannel) (*EventPublisher, error) {
 	if err := queueProvider.DefineExchange(contract.BRPEventsExchange, true); err != nil {
 		return nil, err
 	}
