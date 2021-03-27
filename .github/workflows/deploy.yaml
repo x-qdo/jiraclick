@@ -91,7 +91,7 @@ jobs:
 
       - name: Push image to DigitalOcean Container Registry
         if: ${{ steps.check.outputs.triggered == 'true' }}
-        run: docker push registry.digitalocean.com/qdo/${{ steps.pr_data.outputs.repo_name }}
+        run: docker push registry.digitalocean.com/qdo/${{ steps.pr_data.outputs.repo_name }}:$(echo ${{ steps.pr_data.outputs.sha }} | head -c7)
 
       - name: Save DigitalOcean kubeconfig
         if: ${{ steps.check.outputs.triggered == 'true' }}
