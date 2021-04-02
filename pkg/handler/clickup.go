@@ -101,7 +101,7 @@ func (h *clickUpWebhooks) doAction(event *clickup.WebhookEvent, tenant string) e
 		return errors.Wrap(err, "ClickUp webhook: slackChannel is not defined")
 	}
 
-	changes = generateTaskChangesByEvent(event)
+	changes = generateTaskChangesByEvent(event, task)
 	err = h.publisher.ClickUpTaskUpdated(changes, slackChannel)
 	if err != nil {
 		return errors.Wrap(err, "ClickUp webhook: can't trigger changes event")
@@ -110,7 +110,7 @@ func (h *clickUpWebhooks) doAction(event *clickup.WebhookEvent, tenant string) e
 	return nil
 }
 
-func generateTaskChangesByEvent(event *clickup.WebhookEvent) model.TaskChanges {
+func generateTaskChangesByEvent(event *clickup.WebhookEvent, task *clickup.Task) model.TaskChanges {
 	changes := model.TaskChanges{
 		Type:      string(event.Type),
 		ClickupID: event.TaskID,
@@ -129,11 +129,7 @@ func generateTaskChangesByEvent(event *clickup.WebhookEvent) model.TaskChanges {
 				value = after["priority"]
 			}
 		case clickup.TaskAssigneeUpdated:
-			if after, ok := historyItem.After.(map[string]interface{}); ok {
-				value = after["username"]
-			} else {
-				value = nil
-			}
+			value = task.Assignees
 		}
 		changes.AddChange(historyItem.Field, value)
 		changes.Username = historyItem.User.Username

@@ -35,6 +35,7 @@ type Task struct {
 	Archived     bool          `json:"archived"`
 	TeamID       string        `json:"team_id"`
 	CustomFields []CustomField `json:"custom_fields,omitempty"`
+	Assignees    []User        `json:"assignees"`
 
 	List struct {
 		ID string `json:"id"`
