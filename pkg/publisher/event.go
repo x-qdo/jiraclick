@@ -3,6 +3,7 @@ package publisher
 import (
 	"fmt"
 	"github.com/astreter/amqpwrapper"
+	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 
@@ -29,7 +30,7 @@ func (p *EventPublisher) ClickUpTaskCreated(payload model.TaskPayload) error {
 	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
 	}
-
+	logrus.Debugf("message sent to %s", routingKey)
 	return nil
 }
 
@@ -38,7 +39,7 @@ func (p *EventPublisher) JiraTaskCreated(payload model.TaskPayload) error {
 	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
 	}
-
+	logrus.Debugf("message sent to %s", routingKey)
 	return nil
 }
 
@@ -47,6 +48,6 @@ func (p *EventPublisher) ClickUpTaskUpdated(payload model.TaskChanges, slackChan
 	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
 	}
-
+	logrus.Debugf("message sent to %s", routingKey)
 	return nil
 }
