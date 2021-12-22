@@ -26,7 +26,7 @@ func NewEventPublisher(queueProvider *amqpwrapper.RabbitChannel) (*EventPublishe
 
 func (p *EventPublisher) ClickUpTaskCreated(payload model.TaskPayload) error {
 	routingKey := fmt.Sprintf(string(contract.TaskCreatedClickUpEvent), payload.SlackChannel)
-	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
+	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
 	}
 
@@ -35,7 +35,7 @@ func (p *EventPublisher) ClickUpTaskCreated(payload model.TaskPayload) error {
 
 func (p *EventPublisher) JiraTaskCreated(payload model.TaskPayload) error {
 	routingKey := fmt.Sprintf(string(contract.TaskCreatedJiraEvent), payload.SlackChannel)
-	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
+	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
 	}
 
@@ -44,7 +44,7 @@ func (p *EventPublisher) JiraTaskCreated(payload model.TaskPayload) error {
 
 func (p *EventPublisher) ClickUpTaskUpdated(payload model.TaskChanges, slackChannel string) error {
 	routingKey := fmt.Sprintf(string(contract.TaskUpdatedClickUpEvent), slackChannel)
-	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey, true); err != nil {
+	if err := p.queueProvider.Publish(payload, contract.BRPEventsExchange, routingKey); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("failed to send a %s to events queue", routingKey))
 	}
 
