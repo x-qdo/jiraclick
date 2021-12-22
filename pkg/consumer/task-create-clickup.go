@@ -5,7 +5,7 @@ import (
 	"github.com/araddon/dateparse"
 
 	"github.com/pkg/errors"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
