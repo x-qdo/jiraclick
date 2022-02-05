@@ -1,6 +1,6 @@
 FROM golang:1.14 AS builder
 
-ARG GOPROXY=direct
+ARG GOPROXY=https://proxy.golang.org,direct
 ENV GOPROXY ${GOPROXY}
 
 ARG GOPRIVATE
