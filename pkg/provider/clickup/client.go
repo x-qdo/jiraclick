@@ -2,9 +2,11 @@ package clickup
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"net/http"
 	"net/http/httputil"
 )
@@ -20,11 +22,11 @@ type APIClient struct {
 }
 
 type ClientInterface interface {
-	CreateTask(request *PutClickUpTaskRequest) (*Task, error)
-	UpdateTask(taskID string, request *PutClickUpTaskRequest) error
-	SetCustomField(taskID, customFieldID string, value interface{}) error
-	GetTask(taskID string) (*Task, error)
-	GetInitialTaskStatus() string
+	CreateTask(ctx context.Context, request *PutClickUpTaskRequest) (*Task, error)
+	UpdateTask(ctx context.Context, taskID string, request *PutClickUpTaskRequest) error
+	SetCustomField(ctx context.Context, taskID, customFieldID string, value interface{}) error
+	GetTask(ctx context.Context, taskID string) (*Task, error)
+	GetInitialTaskStatus(ctx context.Context) string
 }
 
 type PutClickUpTaskRequest struct {
@@ -41,16 +43,23 @@ func (t *PutClickUpTaskRequest) AddCustomField(id CustomFieldKey, value interfac
 	t.CustomFields = append(t.CustomFields, CustomField{ID: id, Value: value})
 }
 
-func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
+func (c *APIClient) CreateTask(ctx context.Context, request *PutClickUpTaskRequest) (*Task, error) {
 	var task Task
+	ctx, span := otel.Tracer("clickup provider").Start(ctx, "CreateTask")
+	defer span.End()
+
 	body, err := json.Marshal(request)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
-	logrus.Debug("Sending POST request to Clickup: ", c.options.host+"/list/"+c.options.listID+"/task/")
-	logrus.Debug(string(body))
+	span.SetAttributes(
+		attribute.String("url", c.options.host+"/list/"+c.options.listID+"/task/"),
+		attribute.String("request body", string(body)),
+	)
 	req, err := http.NewRequest("POST", c.options.host+"/list/"+c.options.listID+"/task/", bytes.NewBuffer(body))
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	req.Header.Add("Authorization", c.options.token)
@@ -58,30 +67,42 @@ func (c *APIClient) CreateTask(request *PutClickUpTaskRequest) (*Task, error) {
 
 	r, err := c.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
+	span.AddEvent("POST request sent to ClickUp")
 
 	if r.StatusCode != http.StatusOK {
-		return nil, formatHttpError(r)
+		err = formatHttpError(r)
+		span.RecordError(err)
+		return nil, err
 	}
 	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
 	return &task, nil
 }
 
-func (c *APIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) error {
+func (c *APIClient) UpdateTask(ctx context.Context, taskID string, request *PutClickUpTaskRequest) error {
+	ctx, span := otel.Tracer("clickup provider").Start(ctx, "UpdateTask")
+	defer span.End()
+
 	body, err := json.Marshal(request)
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
-	logrus.Debug("Sending PUT request to Clickup: ", c.options.host+"/task/"+taskID)
-	logrus.Debug(string(body))
+	span.SetAttributes(
+		attribute.String("url", c.options.host+"/task/"+taskID),
+		attribute.String("request body", string(body)),
+	)
 	req, err := http.NewRequest("PUT", c.options.host+"/task/"+taskID, bytes.NewBuffer(body))
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
 	req.Header.Add("Authorization", c.options.token)
@@ -89,18 +110,24 @@ func (c *APIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) er
 
 	r, err := c.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
 
+	span.AddEvent("POST request sent to ClickUp")
+
 	if r.StatusCode != http.StatusOK {
-		return formatHttpError(r)
+		err = formatHttpError(r)
+		span.RecordError(err)
+		return err
 	}
 	defer r.Body.Close()
 
 	var customField CustomField
 	for _, customField = range request.CustomFields {
-		err = c.SetCustomField(taskID, string(customField.ID), customField.Value)
+		err = c.SetCustomField(ctx, taskID, string(customField.ID), customField.Value)
 		if err != nil {
+			span.RecordError(err)
 			return err
 		}
 	}
@@ -108,20 +135,28 @@ func (c *APIClient) UpdateTask(taskID string, request *PutClickUpTaskRequest) er
 	return nil
 }
 
-func (c *APIClient) SetCustomField(taskID, customFieldID string, value interface{}) error {
+func (c *APIClient) SetCustomField(ctx context.Context, taskID, customFieldID string, value interface{}) error {
 	var request struct {
 		Value interface{} `json:"value"`
 	}
+
+	ctx, span := otel.Tracer("clickup provider").Start(ctx, "SetCustomField")
+	defer span.End()
+
 	request.Value = value
 	body, err := json.Marshal(request)
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
 
-	logrus.Debug("Sending POST request to Clickup: ", c.options.host+"/task/"+taskID+"/field/"+customFieldID)
-	logrus.Debug(string(body))
+	span.SetAttributes(
+		attribute.String("url", c.options.host+"/task/"+taskID+"/field/"+customFieldID),
+		attribute.String("request body", string(body)),
+	)
 	req, err := http.NewRequest("POST", c.options.host+"/task/"+taskID+"/field/"+customFieldID, bytes.NewBuffer(body))
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
 	req.Header.Add("Authorization", c.options.token)
@@ -129,22 +164,33 @@ func (c *APIClient) SetCustomField(taskID, customFieldID string, value interface
 
 	r, err := c.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
 
+	span.AddEvent("POST request sent to ClickUp")
+
 	if r.StatusCode != http.StatusOK {
-		return formatHttpError(r)
+		err = formatHttpError(r)
+		span.RecordError(err)
+		return err
 	}
 	defer r.Body.Close()
 
 	return nil
 }
 
-func (c *APIClient) GetTask(taskID string) (*Task, error) {
+func (c *APIClient) GetTask(ctx context.Context, taskID string) (*Task, error) {
 	var task Task
-	logrus.Debug("Sending GET request to Clickup: ", c.options.host+"/task/"+taskID)
+	ctx, span := otel.Tracer("clickup provider").Start(ctx, "GetTask")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("url", c.options.host+"/task/"+taskID),
+	)
+
 	req, err := http.NewRequest("GET", c.options.host+"/task/"+taskID, nil)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	req.Header.Add("Authorization", c.options.token)
@@ -152,8 +198,11 @@ func (c *APIClient) GetTask(taskID string) (*Task, error) {
 
 	r, err := c.httpClient.Do(req)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
+
+	span.AddEvent("GET request sent to ClickUp")
 
 	if r.StatusCode != http.StatusOK {
 		return nil, formatHttpError(r)
@@ -161,13 +210,18 @@ func (c *APIClient) GetTask(taskID string) (*Task, error) {
 	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(&task)
 	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
+
+	span.AddEvent("task received")
 
 	return &task, nil
 }
 
-func (c *APIClient) GetInitialTaskStatus() string {
+func (c *APIClient) GetInitialTaskStatus(ctx context.Context) string {
+	ctx, span := otel.Tracer("clickup provider").Start(ctx, "GetInitialTaskStatus")
+	defer span.End()
 	return c.options.initialTaskStatus
 }
 

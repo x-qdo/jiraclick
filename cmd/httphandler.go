@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"github.com/astreter/amqpwrapper"
+	"github.com/astreter/amqpwrapper/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"x-qdo/jiraclick/pkg/contract"
 
 	"x-qdo/jiraclick/pkg/config"
@@ -42,6 +43,7 @@ func NewHTTPHandlerCmd(
 					"message": "ok",
 				})
 			})
+			router.Use(otelgin.Middleware(config.ServiceName))
 
 			router.POST("webhooks/clickup", clickUpHandler.TaskEvent)
 

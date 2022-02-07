@@ -1,7 +1,7 @@
 package consumer
 
 import (
-	"github.com/astreter/amqpwrapper"
+	"github.com/astreter/amqpwrapper/v2"
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/provider/clickup"
 	"x-qdo/jiraclick/pkg/provider/jira"

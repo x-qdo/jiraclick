@@ -1,8 +1,10 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/araddon/dateparse"
+	"go.opentelemetry.io/otel"
 
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -25,45 +27,63 @@ func NewTaskCreateClickupAction(clickup *clickup.ConnectorPool, p *publisher.Eve
 	}, nil
 }
 
-func (a *TaskCreateClickupAction) ProcessAction(delivery amqp.Delivery) error {
+func (a *TaskCreateClickupAction) ProcessAction(ctx context.Context, delivery amqp.Delivery) error {
 	var (
 		input   inputBody
 		task    *clickup.Task
 		payload model.TaskPayload
 	)
 
+	ctx, span := otel.Tracer("clickup action").Start(ctx, "ProcessAction")
+	defer span.End()
+
 	err := json.Unmarshal(delivery.Body, &input)
 	if err != nil {
-		return errors.Wrap(err, "Can't unmarshall task body")
+		err = errors.Wrap(err, "Can't unmarshall task body")
+		span.RecordError(err)
+		return err
 	}
 
 	err = json.Unmarshal([]byte(input.Data.Payload), &payload)
 	if err != nil {
-		return errors.Wrap(err, "Can't unmarshall task body")
+		err = errors.Wrap(err, "Can't unmarshall task body")
+		span.RecordError(err)
+		return err
 	}
 
-	request := a.generateTaskRequest(&payload)
-	task, err = a.client.GetInstance(payload.SlackChannel).CreateTask(request)
+	request := a.generateTaskRequest(ctx, &payload)
+	span.AddEvent("Request payload generated")
+	task, err = a.client.GetInstance(payload.SlackChannel).CreateTask(ctx, request)
 	if err != nil {
-		return errors.Wrap(err, "Can't create a task in ClickUp")
+		err = errors.Wrap(err, "Can't create a task in ClickUp")
+		span.RecordError(err)
+		return err
 	}
+
+	span.AddEvent("task created")
 
 	payload.ClickupID = task.ID
 	payload.Details["clickup_url"] = task.URL
-	err = a.publisher.ClickUpTaskCreated(payload)
+	err = a.publisher.ClickUpTaskCreated(ctx, payload)
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
+
+	span.AddEvent("result sent to BRP")
 
 	return nil
 }
 
-func (a *TaskCreateClickupAction) generateTaskRequest(payload *model.TaskPayload) *clickup.PutClickUpTaskRequest {
+func (a *TaskCreateClickupAction) generateTaskRequest(ctx context.Context, payload *model.TaskPayload) *clickup.PutClickUpTaskRequest {
 	request := new(clickup.PutClickUpTaskRequest)
+
+	ctx, span := otel.Tracer("clickup action").Start(ctx, "generateTaskRequest")
+	defer span.End()
 
 	request.Name = payload.Title
 	request.NotifyAll = false
-	request.Status = a.client.GetInstance(payload.SlackChannel).GetInitialTaskStatus()
+	request.Status = a.client.GetInstance(payload.SlackChannel).GetInitialTaskStatus(ctx)
 	request.Description = payload.Description + "\n" + payload.AC
 	request.AddCustomField(clickup.RequestedBy, payload.SlackReporter)
 	request.AddCustomField(clickup.SlackLink, payload.Details["slack"])

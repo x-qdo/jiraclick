@@ -1,10 +1,12 @@
 package clickup
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"go.opentelemetry.io/otel"
 )
 
 type EventType string
@@ -42,12 +44,16 @@ type HistoryItem struct {
 	After  interface{} `json:"after"`
 }
 
-func CheckSignature(signature, body, secret string) bool {
+func CheckSignature(ctx context.Context, signature, body, secret string) bool {
+	ctx, span := otel.Tracer("clickup provider").Start(ctx, "CheckSignature")
+	defer span.End()
+
 	s := []byte(secret)
 	m := []byte(body)
 
 	hash := hmac.New(sha256.New, s)
 	if _, err := hash.Write(m); err != nil {
+		span.RecordError(err)
 		return false
 	}
 
@@ -57,9 +63,12 @@ func CheckSignature(signature, body, secret string) bool {
 	return result == signature
 }
 
-func ParseEvent(body string) (*WebhookEvent, error) {
+func ParseEvent(ctx context.Context, body string) (*WebhookEvent, error) {
+	ctx, span := otel.Tracer("clickup provider").Start(ctx, "ParseEvent")
+	defer span.End()
 	e := new(WebhookEvent)
 	if err := json.Unmarshal([]byte(body), e); err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 	if len(e.Changes) == 0 {
