@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/astreter/amqpwrapper"
+	"github.com/astreter/amqpwrapper/v2"
 	"github.com/spf13/cobra"
 
 	"x-qdo/jiraclick/pkg/consumer"

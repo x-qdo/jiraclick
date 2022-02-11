@@ -7,6 +7,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+const ServiceName = "jiraclick"
+
+var envBindings = []string{
+	"debug",
+	"rabbitmq.url",
+	"httphandler.port",
+	"metrics.port",
+	"postgres.url",
+	"postgres.insecure",
+	"otel.exporter.endpoint",
+}
+
 type Config struct {
 	Debug    bool `yaml:"debug"`
 	RabbitMQ struct {
@@ -24,22 +36,18 @@ type Config struct {
 		URL      string `yaml:"url"`
 		Insecure bool   `yaml:"insecure"`
 	} `yaml:"postgres"`
+	Metrics struct {
+		Port string `yaml:"port"`
+	} `yaml:"metrics"`
+	OTel struct {
+		Exporter struct {
+			Endpoint string `yaml:"endpoint"`
+		} `yaml:"exporter"`
+	} `yaml:"otel"`
 }
 
 func NewConfig() (*Config, error) {
-	if err := viper.BindEnv("debug"); err != nil {
-		return nil, err
-	}
-	if err := viper.BindEnv("rabbitmq.url"); err != nil {
-		return nil, err
-	}
-	if err := viper.BindEnv("httphandler.port"); err != nil {
-		return nil, err
-	}
-	if err := viper.BindEnv("postgres.url"); err != nil {
-		return nil, err
-	}
-	if err := viper.BindEnv("postgres.insecure"); err != nil {
+	if err := bindEnvs(envBindings); err != nil {
 		return nil, err
 	}
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
@@ -50,4 +58,14 @@ func NewConfig() (*Config, error) {
 	}
 
 	return c, nil
+}
+
+func bindEnvs(envKeys []string) error {
+	for _, envKey := range envKeys {
+		if err := viper.BindEnv(envKey); err != nil {
+			return fmt.Errorf("error binding '%s': %w", envKey, err)
+		}
+	}
+
+	return nil
 }

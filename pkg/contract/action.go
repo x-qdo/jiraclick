@@ -1,9 +1,10 @@
 package contract
 
 import (
+	"context"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Action interface {
-	ProcessAction(delivery amqp.Delivery) error
+	ProcessAction(ctx context.Context, delivery amqp.Delivery) error
 }

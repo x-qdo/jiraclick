@@ -1,7 +1,9 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
+	"go.opentelemetry.io/otel"
 
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -24,36 +26,42 @@ func NewTaskUpdateClickupAction(clickup *clickup.ConnectorPool, p *publisher.Eve
 	}, nil
 }
 
-func (a *TaskUpdateClickupAction) ProcessAction(delivery amqp.Delivery) error {
+func (a *TaskUpdateClickupAction) ProcessAction(ctx context.Context, delivery amqp.Delivery) error {
 	var (
 		input   inputBody
 		payload model.TaskPayload
 	)
 
+	ctx, span := otel.Tracer("clickup action").Start(ctx, "ProcessAction")
+	defer span.End()
+
 	err := json.Unmarshal(delivery.Body, &input)
 	if err != nil {
-		return errors.Wrap(err, "Can't unmarshall task body")
+		err = errors.Wrap(err, "Can't unmarshall task body")
+		span.RecordError(err)
+		return err
 	}
 
 	err = json.Unmarshal([]byte(input.Data.Payload), &payload)
 	if err != nil {
-		return errors.Wrap(err, "Can't unmarshall task body")
+		err = errors.Wrap(err, "Can't unmarshall task body")
+		span.RecordError(err)
+		return err
 	}
 
-	request, err := a.generateTaskRequest(payload)
+	request := a.generateTaskRequest(payload)
+	span.AddEvent("Request payload generated")
+	err = a.client.GetInstance(payload.SlackChannel).UpdateTask(ctx, payload.ClickupID, request)
 	if err != nil {
-		return errors.Wrap(err, "Can't create task request")
-	}
-
-	err = a.client.GetInstance(payload.SlackChannel).UpdateTask(payload.ClickupID, request)
-	if err != nil {
-		return errors.Wrap(err, "Can't update a task in ClickUp")
+		err = errors.Wrap(err, "Can't update a task in ClickUp")
+		span.RecordError(err)
+		return err
 	}
 
 	return nil
 }
 
-func (a *TaskUpdateClickupAction) generateTaskRequest(payload model.TaskPayload) (*clickup.PutClickUpTaskRequest, error) {
+func (a *TaskUpdateClickupAction) generateTaskRequest(payload model.TaskPayload) *clickup.PutClickUpTaskRequest {
 	request := new(clickup.PutClickUpTaskRequest)
 
 	request.Name = payload.Title
@@ -62,5 +70,5 @@ func (a *TaskUpdateClickupAction) generateTaskRequest(payload model.TaskPayload)
 	request.AddCustomField(clickup.SlackLink, payload.Details["slack"])
 	request.AddCustomField(clickup.JiraLink, payload.Details["clickup_url"])
 
-	return request, nil
+	return request
 }

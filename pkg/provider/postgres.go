@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/go-pg/pg/extra/pgotel/v10"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 	"x-qdo/jiraclick/pkg/config"
@@ -33,6 +34,7 @@ func NewPostgres(cfg *config.Config) (*postgresDB, error) {
 	}
 
 	db := pg.Connect(opt)
+	db.AddQueryHook(pgotel.NewTracingHook())
 
 	if err := db.Ping(context.Background()); err != nil {
 		return nil, fmt.Errorf("failed to ping Postgres: %s", err.Error())
@@ -82,7 +84,7 @@ func (db *postgresDB) getConnection(ctx context.Context) orm.DB {
 		return tx
 	}
 
-	return db.conn
+	return db.conn.WithContext(ctx)
 }
 
 func (db *postgresDB) Close() error {

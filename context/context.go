@@ -2,7 +2,8 @@ package context
 
 import (
 	"context"
-	"github.com/astreter/amqpwrapper"
+	"github.com/astreter/amqpwrapper/v2"
+	"github.com/x-qdo/otelwrapper"
 	"sync"
 	"x-qdo/jiraclick/pkg/contract"
 
@@ -41,13 +42,25 @@ func NewContext() (*Context, error) {
 
 	ctx.WaitGroup = new(sync.WaitGroup)
 
-	amqpProvider, err := amqpwrapper.NewRabbitChannel(ctx.Ctx, ctx.CancelF, ctx.WaitGroup, &amqpwrapper.Config{
-		URL:   cfg.RabbitMQ.URL,
-		Debug: cfg.Debug,
+	tp, err := otelwrapper.InitTracerProvider(config.ServiceName, "default")
+	if err != nil {
+		return nil, err
+	}
+	go otelwrapper.ShutdownWaiting(tp, ctx.Ctx, ctx.WaitGroup)
+
+	amqpProvider, err := amqpwrapper.NewRabbitChannel(ctx.Ctx, ctx.WaitGroup, &amqpwrapper.Config{
+		URL:          cfg.RabbitMQ.URL,
+		Debug:        cfg.Debug,
+		ConfirmSends: true,
 	})
 	if err != nil {
 		panic(err)
 	}
+
+	go func() {
+		<-amqpProvider.Cancel()
+		ctx.CancelF()
+	}()
 
 	db, err := provider.NewPostgres(cfg)
 	if err != nil {

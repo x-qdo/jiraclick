@@ -11,6 +11,10 @@ spec:
       targetPort: http-handler
       protocol: TCP
       name: http-handler
+    - port: 9090
+      targetPort: http-metrics
+      protocol: TCP
+      name: http-metrics
   selector:
     {{- include "jiraclick.selectorLabels" . | nindent 4 }}
     role: api

@@ -12,6 +12,8 @@ spec:
       role: api
   template:
     metadata:
+      annotations:
+        sidecar.opentelemetry.io/inject: "true"
       labels:
         {{- include "jiraclick.selectorLabels" . | nindent 8 }}
         role: api
@@ -36,9 +38,17 @@ spec:
             {{ include "jiraclick.common_env" . | nindent 12 }}
             - name: HTTPHANDLER_PORT
               value: "8080"
+            - name: METRICS_PORT
+              value: "9090"
+          envFrom:
+            - configMapRef:
+                name: opentelemetry-config
           ports:
             - name: http-handler
               containerPort: 8080
+              protocol: TCP
+            - name: http-metrics
+              containerPort: 9090
               protocol: TCP
           livenessProbe:
             httpGet:

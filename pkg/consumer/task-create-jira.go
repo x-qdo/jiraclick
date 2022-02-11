@@ -1,11 +1,12 @@
 package consumer
 
 import (
+	"context"
 	"encoding/json"
-
 	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/trivago/tgo/tcontainer"
+	"go.opentelemetry.io/otel"
 
 	"x-qdo/jiraclick/pkg/contract"
 	"x-qdo/jiraclick/pkg/model"
@@ -25,35 +26,50 @@ func NewTaskCreateJiraAction(jira *jira.ConnectorPool, p *publisher.EventPublish
 	}, nil
 }
 
-func (a *TaskCreateJiraAction) ProcessAction(delivery amqp.Delivery) error {
+func (a *TaskCreateJiraAction) ProcessAction(ctx context.Context, delivery amqp.Delivery) error {
 	var (
 		input   inputBody
 		payload model.TaskPayload
 	)
 
+	ctx, span := otel.Tracer("jira action").Start(ctx, "ProcessAction")
+	defer span.End()
+
 	err := json.Unmarshal(delivery.Body, &input)
 	if err != nil {
-		return errors.Wrap(err, "Can't unmarshall task body")
+		err = errors.Wrap(err, "Can't unmarshall task body")
+		span.RecordError(err)
+		return err
 	}
 
 	err = json.Unmarshal([]byte(input.Data.Payload), &payload)
 	if err != nil {
-		return errors.Wrap(err, "Can't unmarshall task body")
+		err = errors.Wrap(err, "Can't unmarshall task body")
+		span.RecordError(err)
+		return err
 	}
 
 	task := a.generateTaskRequest(payload)
+	span.AddEvent("Request payload generated")
 
-	response, err := a.client.GetInstance(payload.SlackChannel).CreateIssue(task)
+	response, err := a.client.GetInstance(payload.SlackChannel).CreateIssue(ctx, task)
 	if err != nil {
-		return errors.Wrap(err, "Can't create task in Jira")
+		err = errors.Wrap(err, "Can't create task in Jira")
+		span.RecordError(err)
+		return err
 	}
+
+	span.AddEvent("issue created")
 
 	payload.JiraID = response.ID
 	payload.Details["jira_url"] = response.URL
-	err = a.publisher.JiraTaskCreated(payload)
+	err = a.publisher.JiraTaskCreated(ctx, payload)
 	if err != nil {
+		span.RecordError(err)
 		return err
 	}
+
+	span.AddEvent("result sent to BRP")
 
 	return nil
 }

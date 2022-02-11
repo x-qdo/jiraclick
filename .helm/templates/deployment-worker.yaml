@@ -12,6 +12,8 @@ spec:
       role: worker
   template:
     metadata:
+      annotations:
+        sidecar.opentelemetry.io/inject: "true"
       labels:
         {{- include "jiraclick.selectorLabels" . | nindent 8 }}
         role: worker
@@ -34,6 +36,15 @@ spec:
             - worker
           env:
             {{ include "jiraclick.common_env" . | nindent 12 }}
+            - name: METRICS_PORT
+              value: "9090"
+          envFrom:
+            - configMapRef:
+                name: opentelemetry-config
+          ports:
+            - name: http-metrics
+              containerPort: 9090
+              protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
