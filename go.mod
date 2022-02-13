@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/andygrunwald/go-jira v1.14.0
-	github.com/araddon/dateparse v0.0.0-20201001162425-8aadafed4dc4
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/astreter/amqpwrapper/v2 v2.0.2
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-logr/stdr v1.2.2 // indirect
